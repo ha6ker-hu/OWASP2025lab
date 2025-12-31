@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IDOR Demo — Register / Login / Profile (OWASP A01)</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:#071022; --muted:#98a0b3; --accent:#3b82f6;
+    --danger:#ef4444; --success:#10b981; --glass: rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{margin:0;background:linear-gradient(180deg,#041024 0%, #071225 100%);color:#e6eef8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;}
+  .app{width:980px;max-width:100%;display:grid;grid-template-columns:360px 1fr;gap:20px;}
+  .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.03);}
+  h2{margin:0 0 8px 0;font-size:1.05rem}
+  label{font-size:0.85rem;color:var(--muted);display:block;margin-top:10px}
+  input,button,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit;font-size:0.95rem}
+  button{cursor:pointer;background:var(--accent);border:none;color:#021428;font-weight:600}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:500}
+  .muted{color:var(--muted);font-size:0.85rem}
+  .small{font-size:0.80rem}
+  .list{margin-top:10px}
+  .row{display:flex;gap:8px}
+  .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#0b1730;color:#9fc6ff;font-weight:700;font-size:0.78rem}
+  pre{background:#021426;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);overflow:auto}
+  .danger{color:var(--danger)}
+  .success{color:var(--success)}
+  .center{display:flex;align-items:center;justify-content:center}
+  .note{font-size:0.82rem;color:var(--muted);margin-top:8px}
+  .controls{display:flex;gap:10px;margin-top:10px}
+  .right{justify-content:flex-end}
+  .user-list{max-height:220px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed rgba(255,255,255,0.02);margin-top:10px}
+  .user-item{padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.01);margin-bottom:6px;font-size:0.9rem;display:flex;justify-content:space-between;align-items:center}
+  .hint{font-size:0.82rem;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Left column: Register / Login -->
+    <div class="card">
+      <h2>Register</h2>
+      <div class="muted small">Create a new account (no email verification in demo).</div>
+      <label>Username</label>
+      <input id="regUsername" placeholder="alice / bob / charlie" />
+      <label>Full name</label>
+      <input id="regFullname" placeholder="Alice Liddle" />
+      <label>Password</label>
+      <input id="regPassword" type="password" placeholder="password" />
+      <div class="controls">
+        <button id="registerBtn">Register</button>
+        <button class="secondary" id="seedBtn">Seed demo users</button>
+      </div>
+
+      <hr style="margin:14px 0;border:none;border-top:1px solid rgba(255,255,255,0.03);" />
+
+      <h2>Login</h2>
+      <label>Username</label>
+      <input id="loginUsername" placeholder="username" />
+      <label>Password</label>
+      <input id="loginPassword" type="password" placeholder="password" />
+      <div class="controls">
+        <button id="loginBtn">Login</button>
+        <button class="secondary" id="logoutBtn">Logout</button>
+      </div>
+
+      <div class="note" id="authNote">Not logged in</div>
+      <div class="hint">This demo simulates server-side behavior in-memory. The vulnerable API intentionally does not check ownership.</div>
+    </div>
+
+    <!-- Right column: Profile + Vulnerable IDOR -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2>Profile</h2>
+          <div class="muted small">View and edit your profile. ID shown is the internal object reference (simulated).</div>
+        </div>
+        <div class="badge" id="sessionBadge">no session</div>
+      </div>
+
+      <div id="profileArea" style="margin-top:12px">
+        <div id="notLogged" class="muted">Please register or login on the left to view your profile.</div>
+
+        <div id="profileBox" style="display:none">
+          <label>Your Profile ID</label>
+          <input id="profileId" readonly />
+
+          <label>Username</label>
+          <input id="profileUsername" readonly />
+
+          <label>Full name</label>
+          <input id="profileFullname" />
+
+          <label>Email</label>
+          <input id="profileEmail" placeholder="you@example.com" />
+
+          <div class="controls">
+            <button id="saveProfileBtn">Save Profile (server-side)</button>
+            <button class="secondary" id="deleteAccountBtn">Delete Account</button>
+          </div>
+
+          <div class="note" id="saveNote"></div>
+
+          <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03);" />
+
+          <h2 style="margin-bottom:6px">Vulnerable IDOR Lookup</h2>
+          <div class="muted small">This demonstrates the broken API: server `GET /profile?id=<id>` returns any profile without checking who is requesting it.</div>
+
+          <label>Lookup profile by ID (vulnerable)</label>
+          <div class="row">
+            <input id="lookupId" placeholder="Enter profile ID (e.g. 1,2,3)" />
+            <button id="lookupBtn">Lookup (VULNERABLE)</button>
+          </div>
+
+          <div class="controls" style="margin-top:8px">
+            <button id="fixBtn" class="secondary">Show secure API call (fix)</button>
+            <div class="right" style="flex:1"></div>
+          </div>
+
+          <div class="user-list" id="lookupResult" style="margin-top:12px;color:var(--muted)"></div>
+
+          <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03);" />
+
+          <h2 style="margin-bottom:6px">All Registered Users</h2>
+          <div class="muted small">Server-side list (for demonstration). Use IDs above to try IDOR.</div>
+          <div id="registeredUsers" class="user-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  IDOR Demo "Server" (simulated)
+  - users: array of user records { id, username, fullname, password, email }
+  - sessions: map token -> username
+  - The "vulnerable" endpoint getProfileVULNERABLE(id, token) ignores token and returns profile by id.
+  - The "secure" endpoint getProfileSECURE(id, token) checks that session user owns the profile.
+*/
+
+(function(){
+  // ----------------------
+  // In-memory "database"
+  // ----------------------
+  let users = [];          // persistent records
+  let sessions = {};       // token -> username
+
+  // Auto-increment ID generator
+  let nextId = 1;
+
+  // Simple helpers
+  function makeToken(){ return 'tok_'+Math.random().toString(36).slice(2,12); }
+  function findUserByUsername(u){ return users.find(x=>x.username===u); }
+  function findUserById(id){ return users.find(x=>x.id===Number(id)); }
+
+  // ----------------------
+  // "Server" API functions
+  // ----------------------
+
+  // Register: returns { success, message, user }
+  function serverRegister({username,fullname,password,email}){
+    if(!username||!password) return { success:false, message:'username & password required' };
+    if(findUserByUsername(username)) return { success:false, message:'username already taken' };
+    const user = { id: nextId++, username, fullname: fullname||'', password, email: email||'' };
+    users.push(user);
+    return { success:true, message:'registered', user:{ id:user.id, username:user.username } };
+  }
+
+  // Login: returns { success, token, message }
+  function serverLogin({username,password}){
+    const user = findUserByUsername(username);
+    if(!user || user.password !== password) return { success:false, message:'invalid creds' };
+    const token = makeToken();
+    sessions[token] = user.username; // simple session store
+    return { success:true, token, message:'ok' };
+  }
+
+  // Get current user from token
+  function serverGetUserFromToken(token){
+    const username = sessions[token];
+    if(!username) return null;
+    return findUserByUsername(username);
+  }
+
+  // Save profile (must be authenticated)
+  function serverSaveProfile(token, {fullname,email}){
+    const user = serverGetUserFromToken(token);
+    if(!user) return { success:false, message:'not authenticated' };
+    user.fullname = fullname;
+    user.email = email;
+    return { success:true, message:'profile saved', user:{ id:user.id, username:user.username, fullname:user.fullname, email:user.email }};
+  }
+
+  // Delete account (authenticated)
+  function serverDeleteAccount(token){
+    const user = serverGetUserFromToken(token);
+    if(!user) return { success:false, message:'not authenticated' };
+    users = users.filter(u=>u.username !== user.username);
+    // remove sessions for this username
+    for(const t in sessions) if(sessions[t]===user.username) delete sessions[t];
+    return { success:true, message:'account deleted' };
+  }
+
+  // ------------------------
+  // VULNERABLE: IDOR endpoint
+  // ------------------------
+  // GET /profile?id=<id>
+  // IMPORTANT: This intentionally ignores the token and returns the profile by id.
+  function getProfileVULNERABLE(id, token){
+    const user = findUserById(id);
+    if(!user) return { success:false, message:'not found' };
+    // VULNERABLE: NO OWNER CHECK. Returns profile even if requester isn't the owner.
+    return { success:true, profile: { id:user.id, username:user.username, fullname:user.fullname, email:user.email } };
+  }
+
+  // ------------------------
+  // SECURE: fixed endpoint
+  // ------------------------
+  // GET /profile?id=<id> (secure)
+  function getProfileSECURE(id, token){
+    const requester = serverGetUserFromToken(token);
+    if(!requester) return { success:false, message:'not authenticated' };
+    const user = findUserById(id);
+    if(!user) return { success:false, message:'not found' };
+    // CHECK ownership: only owner can see full profile (or allow admin)
+    if(user.username !== requester.username){
+      return { success:false, message:'forbidden' };
+    }
+    return { success:true, profile: { id:user.id, username:user.username, fullname:user.fullname, email:user.email } };
+  }
+
+  // ------------------------
+  // Expose to UI layer
+  // ------------------------
+  window.__demo = {
+    // state
+    _getUsers: ()=>users,
+    _getSessions: ()=>({...sessions}),
+    // actions
+    register: serverRegister,
+    login: serverLogin,
+    getUserFromToken: serverGetUserFromToken,
+    saveProfile: serverSaveProfile,
+    deleteAccount: serverDeleteAccount,
+    getProfileVULNERABLE,
+    getProfileSECURE,
+    seedDemo: function(){
+      users = [
+        { id:1, username:'alice', fullname:'Alice Liddle', password:'alicepass', email:'alice@example.com' },
+        { id:2, username:'bob',   fullname:'Bob Marley',   password:'bobpass',   email:'bob@example.com' },
+        { id:3, username:'carol', fullname:'Carol Jones',  password:'carolpass', email:'carol@example.com' }
+      ];
+      nextId = 4;
+      sessions = {};
+      return { success:true };
+    }
+  };
+})();
+
+// ----------------------
+// UI logic
+// ----------------------
+(function(){
+  const regUsername = document.getElementById('regUsername');
+  const regFullname = document.getElementById('regFullname');
+  const regPassword = document.getElementById('regPassword');
+  const registerBtn  = document.getElementById('registerBtn');
+  const seedBtn      = document.getElementById('seedBtn');
+
+  const loginUsername = document.getElementById('loginUsername');
+  const loginPassword = document.getElementById('loginPassword');
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const authNote = document.getElementById('authNote');
+  const sessionBadge = document.getElementById('sessionBadge');
+
+  const profileBox = document.getElementById('profileBox');
+  const notLogged = document.getElementById('notLogged');
+  const profileId = document.getElementById('profileId');
+  const profileUsername = document.getElementById('profileUsername');
+  const profileFullname = document.getElementById('profileFullname');
+  const profileEmail = document.getElementById('profileEmail');
+  const saveProfileBtn = document.getElementById('saveProfileBtn');
+  const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+  const saveNote = document.getElementById('saveNote');
+
+  const lookupId = document.getElementById('lookupId');
+  const lookupBtn = document.getElementById('lookupBtn');
+  const lookupResult = document.getElementById('lookupResult');
+  const fixBtn = document.getElementById('fixBtn');
+
+  const registeredUsers = document.getElementById('registeredUsers');
+
+  // Session token stored in memory (like a cookie)
+  let currentToken = null;
+
+  // Helper: refresh list of registered users
+  function renderUserList(){
+    const users = window.__demo._getUsers();
+    registeredUsers.innerHTML = users.map(u=>{
+      return `<div class="user-item"><div>#${u.id} • <strong>${escapeHtml(u.username)}</strong> — ${escapeHtml(u.fullname||'')}</div><div class="muted small">id:${u.id}</div></div>`;
+    }).join('') || '<div class="muted small">no users</div>';
+  }
+
+  // Update auth UI
+  function refreshAuthUI(){
+    if(!currentToken){
+      authNote.textContent = 'Not logged in';
+      sessionBadge.textContent = 'no session';
+      profileBox.style.display = 'none';
+      notLogged.style.display = 'block';
+      return;
+    }
+    const user = window.__demo.getUserFromToken(currentToken);
+    if(!user){
+      currentToken = null;
+      return refreshAuthUI();
+    }
+    authNote.textContent = `Logged in as ${user.username}`;
+    sessionBadge.textContent = `session: ${short(currentToken)}`;
+    profileBox.style.display = 'block';
+    notLogged.style.display = 'none';
+    // populate profile fields with server record
+    profileId.value = user.id;
+    profileUsername.value = user.username;
+    profileFullname.value = user.fullname || '';
+    profileEmail.value = user.email || '';
+    saveNote.textContent = '';
+  }
+
+  // Utility
+  function short(t){ return t.slice(0,6)+'…'; }
+  function escapeHtml(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  // Seed demo users
+  seedBtn.addEventListener('click', ()=>{
+    window.__demo.seedDemo();
+    currentToken = null;
+    refreshAuthUI();
+    renderUserList();
+    alert('Seeded demo users: alice(1), bob(2), carol(3)\nPasswords: alicepass / bobpass / carolpass');
+  });
+
+  // Register
+  registerBtn.addEventListener('click', ()=>{
+    const username = regUsername.value.trim();
+    const fullname = regFullname.value.trim();
+    const password = regPassword.value;
+    const res = window.__demo.register({ username, fullname, password });
+    if(!res.success){
+      alert('Register failed: ' + res.message);
+      return;
+    }
+    regUsername.value=''; regFullname.value=''; regPassword.value='';
+    renderUserList();
+    alert('Registered user: ' + res.user.username + ' (id:'+res.user.id+')');
+  });
+
+  // Login
+  loginBtn.addEventListener('click', ()=>{
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+    const res = window.__demo.login({ username, password });
+    if(!res.success){ alert('Login failed: '+res.message); return; }
+    currentToken = res.token;
+    loginUsername.value=''; loginPassword.value='';
+    refreshAuthUI();
+    renderUserList();
+  });
+
+  // Logout
+  logoutBtn.addEventListener('click', ()=>{
+    currentToken = null;
+    refreshAuthUI();
+  });
+
+  // Save profile (server-side)
+  saveProfileBtn.addEventListener('click', ()=>{
+    if(!currentToken){ alert('not logged in'); return; }
+    const fullname = profileFullname.value.trim();
+    const email = profileEmail.value.trim();
+    const res = window.__demo.saveProfile(currentToken, { fullname, email });
+    if(!res.success){ saveNote.textContent = res.message; saveNote.className='note danger'; return; }
+    saveNote.textContent = 'Profile saved successfully.';
+    saveNote.className='note success';
+    renderUserList();
+    refreshAuthUI();
+  });
+
+  // Delete account
+  deleteAccountBtn.addEventListener('click', ()=>{
+    if(!confirm('Delete your account? This removes the demo record.')) return;
+    if(!currentToken){ alert('not logged in'); return; }
+    const res = window.__demo.deleteAccount(currentToken);
+    if(!res.success){ alert('Failed: '+res.message); return; }
+    currentToken = null;
+    refreshAuthUI();
+    renderUserList();
+    alert('Account deleted');
+  });
+
+  // VULNERABLE lookup button (IDOR)
+  lookupBtn.addEventListener('click', ()=>{
+    const id = lookupId.value.trim();
+    if(!id){ lookupResult.innerHTML = '<div class="muted small">enter an id</div>'; return; }
+    // CALL to vulnerable API: intentionally ignores currentToken (broken)
+    const res = window.__demo.getProfileVULNERABLE(id, currentToken);
+    if(!res.success){
+      lookupResult.innerHTML = `<div class="muted small">${escapeHtml(res.message)}</div>`;
+      return;
+    }
+    // Display returned profile (this simulates server sending sensitive info)
+    const p = res.profile;
+    lookupResult.innerHTML = `<div style="padding:6px;border-radius:6px;background:rgba(255,255,255,0.01)"><pre>ID: ${p.id}\nUsername: ${escapeHtml(p.username)}\nFull name: ${escapeHtml(p.fullname)}\nEmail: ${escapeHtml(p.email)}</pre></div><div class="hint">Note: This returned full profile data regardless of who requested it — that's IDOR / Broken Access Control.</div>`;
+  });
+
+  // Fix button: show the secure API behavior (checks ownership)
+  fixBtn.addEventListener('click', ()=>{
+    const id = lookupId.value.trim();
+    if(!id){ alert('Enter the id you want to test in the lookup box (e.g., 1 or 2).'); return; }
+    const res = window.__demo.getProfileSECURE(id, currentToken);
+    if(!res.success){
+      lookupResult.innerHTML = `<div class="muted small">SECURE API response: ${escapeHtml(res.message)}</div>`;
+      return;
+    }
+    const p = res.profile;
+    lookupResult.innerHTML = `<div style="padding:6px;border-radius:6px;background:rgba(255,255,255,0.01)"><pre>(SECURE) ID: ${p.id}\nUsername: ${escapeHtml(p.username)}\nFull name: ${escapeHtml(p.fullname)}\nEmail: ${escapeHtml(p.email)}</pre></div><div class="hint">Secure API enforces ownership — only the profile owner can fetch the profile.</div>`;
+  });
+
+  // Initialize
+  (function init(){
+    // seed by default for convenience
+    window.__demo.seedDemo();
+    renderUserList();
+    refreshAuthUI();
+  })();
+
+})();
+</script>
+
+<!--
+HOW TO DEMO (suggested)
+1. Click "Seed demo users" (creates alice(1), bob(2), carol(3) with known passwords).
+2. Login as alice (username: alice, password: alicepass).
+3. In the right column you'll see your profile (id=1).
+4. In "Vulnerable IDOR Lookup" enter 2 and click "Lookup (VULNERABLE)".
+   -> You will see Bob's full profile (IDOR) even though you're logged in as Alice.
+5. Click "Show secure API call (fix)" to simulate a fixed endpoint:
+   -> The secure API will respond "forbidden" when Alice tries to view Bob's profile.
+6. Repeat by logging in as bob and try the same.
+
+LESSONS:
+- Broken Access Control occurs when server-side endpoints return objects by ID without checking if
+  the requesting user is authorized to view them.
+- Fix: server must derive the requesting user from the session/token and enforce ownership or roles
+  before returning sensitive data.
+-->
+
+</body>
+</html>
