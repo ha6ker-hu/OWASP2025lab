@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HealthSync A02:2025 - Security Misconfiguration</title>
+    <style>
+        :root { 
+            --primary: #1e293b; --accent: #3b82f6; --danger: #ef4444; 
+            --success: #10b981; --bg-main: #ffffff; --bg-sidebar: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg-main); color: #1e293b; margin: 0; display: flex; height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar { width: 280px; background: var(--bg-sidebar); padding: 25px; color: white; display: flex; flex-direction: column; }
+        .nav-item { padding: 12px 15px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; transition: 0.2s; color: #94a3b8; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .active { background: var(--accent); color: white; font-weight: bold; }
+
+        /* Main Content */
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .card { background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        /* Console/Logs */
+        .console { background: #000; color: #00ff00; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.4; border-left: 5px solid #334155; }
+        .error-stack { color: #ff5555; background: #220000; padding: 15px; border: 1px dashed #ff0000; margin-top: 10px; font-size: 0.8em; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+        .badge-warn { background: #fef3c7; color: #92400e; }
+        
+        button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        input { border: 1px solid var(--border); padding: 12px; border-radius: 6px; width: 100%; margin: 10px 0; background: #f8fafc; }
+        
+        .dir-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #f1f5f9; cursor: pointer; color: #3b82f6; }
+        .dir-item:hover { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2 style="color:var(--accent)">HealthSync <small style="opacity:0.5">v6.0</small></h2>
+    <p style="font-size: 0.8em; color: #64748b; margin-top: -15px;">A02:2025 Misconfiguration Lab</p>
+    <div class="nav-item active" onclick="showPage('default')">1. Default Credentials</div>
+    <div class="nav-item" onclick="showPage('listing')">2. Directory Listing</div>
+    <div class="nav-item" onclick="showPage('verbose')">3. Verbose Errors</div>
+    <div class="nav-item" onclick="showPage('debug')">4. Unused Debugging</div>
+</div>
+
+<div class="main">
+    <div id="page-default" class="page">
+        <div class="card">
+            <span class="badge badge-warn">Scenario: Internal Admin Panel</span>
+            <h3>Management Console</h3>
+            <p>Developer note: "We'll change the factory settings before the hospital goes live." (Spoiler: They didn't).</p>
+            <input type="text" id="user" placeholder="Username">
+            <input type="password" id="pass" placeholder="Password">
+            <button onclick="checkDefault()">Login</button>
+            <div id="default-log" class="console" style="margin-top:20px; display:none;"></div>
+        </div>
+    </div>
+
+    <div id="page-listing" class="page" style="display:none;">
+        <div class="card">
+            <span class="badge badge-warn">Scenario: Information Leakage</span>
+            <h3>Index of /backup/</h3>
+            <p>The server is misconfigured to show file contents when an index.html is missing.</p>
+            <div style="border: 1px solid var(--border); border-radius: 6px;">
+                <div class="dir-item" onclick="alert('Downloading: config_backup_2025.zip (Contains DB Passwords!)')">📁 config_backup_2025.zip</div>
+                <div class="dir-item" onclick="alert('Downloading: .env (Contains API Keys!)')">📄 .env</div>
+                <div class="dir-item" onclick="alert('Downloading: internal_manual.pdf')">📄 internal_manual.pdf</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-verbose" class="page" style="display:none;">
+        <div class="card">
+            <h3>Patient Search (UAT Environment)</h3>
+            <p>Try searching for a patient ID. If it fails, the "detailed error" mode is still on.</p>
+            <input type="text" id="search-id" placeholder="Enter Patient ID (e.g., 999)">
+            <button onclick="triggerError()">Search</button>
+            <div id="error-output" style="display:none;">
+                <div class="console">Error: Failed to fetch data.</div>
+                <div class="error-stack">
+                    [INTERNAL SERVER ERROR 500]<br>
+                    at HealthSync.DB.Query(patient_id=999)<br>
+                    at PostgreSQL.Connect("jdbc:postgresql://db-prod-cluster:5432/health_db")<br>
+                    at Auth.Provider.Verify(user="db_service_user", pass="Hosp1talPass2025!")<br>
+                    -- Stack trace continued for 42 lines --
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-debug" class="page" style="display:none;">
+        <div class="card">
+            <h3>Production Dashboard</h3>
+            <p>Everything looks normal. But is there a hidden debug parameter in the URL?</p>
+            <div id="debug-status" style="padding: 20px; background: #f8fafc; border: 2px dashed var(--border); text-align: center;">
+                Debug Mode: <strong>OFF</strong>
+            </div>
+            <br>
+            <input type="text" id="url-param" placeholder="Add URL parameter (e.g., ?debug=true)">
+            <button onclick="toggleDebug()">Apply Parameter</button>
+            
+            <div id="secret-panel" style="display:none; margin-top: 20px; border: 2px solid var(--danger); padding: 20px;">
+                <h4 style="color:var(--danger)">[SECRET DEBUG PANEL]</h4>
+                <ul>
+                    <li>Clear Session Cache</li>
+                    <li>Download System Logs</li>
+                    <li><b>Execute Raw SQL Shell</b></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + id).style.display = 'block';
+        event.currentTarget.classList.add('active');
+    }
+
+    function checkDefault() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        const log = document.getElementById('default-log');
+        log.style.display = 'block';
+        if(u === 'admin' && p === 'admin') {
+            log.innerHTML = "ACCESS GRANTED. Welcome to the Factory Management Console. <br> [SENSITIVE DATA LOADED]";
+        } else {
+            log.innerHTML = "ACCESS DENIED. Invalid credentials.";
+        }
+    }
+
+    function triggerError() {
+        document.getElementById('error-output').style.display = 'block';
+    }
+
+    function toggleDebug() {
+        const val = document.getElementById('url-param').value;
+        if(val.includes('debug=true') || val.includes('admin=true')) {
+            document.getElementById('debug-status').innerHTML = "Debug Mode: <strong style='color:red'>ACTIVE</strong>";
+            document.getElementById('secret-panel').style.display = 'block';
+        } else {
+            alert("Nothing happened. Try the correct parameter.");
+        }
+    }
+</script>
+</body>
+</html>
