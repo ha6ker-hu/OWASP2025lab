@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+<body style="background-color: black;">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;font-size:13px;background:var(--color-background-primary);color:#0fC}
+.wrap{padding:1.5rem 0}
+.header{text-align:center;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid #0ff}
+.header h1{font-size:20px;font-weight:700;letter-spacing:3px;color:#0ff;text-transform:uppercase;text-shadow:0 0 10px #0ff;margin-bottom:4px}
+.header p{font-size:11px;color:#08f;letter-spacing:1px;text-transform:uppercase}
+.scanline{position:absolute;top:0;left:0;right:0;height:1px;background:repeating-linear-gradient(90deg,transparent,transparent 2px,rgba(0,255,255,0.3) 2px,rgba(0,255,255,0.3) 4px);animation:scan 8s linear infinite;pointer-events:none}
+@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(100vh)}}
+.glitch{position:relative}
+.glitch::before{content:attr(data-text);position:absolute;left:-2px;top:-2px;width:100%;height:100%;background:var(--color-background-primary);color:#f0f;clip:rect(0,900px,0,0);animation:glitch-anim 3s infinite}
+@keyframes glitch-anim{0%{clip:rect(0,900px,0,0)}20%{clip:rect(40px,900px,45px,0)}40%{clip:rect(130px,900px,140px,0)}60%{clip:rect(80px,900px,90px,0)}80%{clip:rect(10px,900px,20px,0)}100%{clip:rect(0,900px,0,0)}}
+.tab-row{display:flex;gap:4px;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{padding:6px 14px;font-size:12px;border:2px solid #0ff;border-radius:0;cursor:pointer;background:transparent;color:#0ff;text-transform:uppercase;letter-spacing:1px;transition:all .2s;font-family:'Courier New',monospace;font-weight:700}
+.tab:hover{background:#0ff;color:#000;box-shadow:0 0 10px #0ff}
+.tab.on{background:#0ff;color:#000;box-shadow:inset 0 0 10px #0ff}
+.pane{display:none}.pane.on{display:block}
+.panel{background:linear-gradient(135deg, rgba(0,20,40,0.9), rgba(0,40,60,0.9));border:2px solid #0ff;border-radius:0;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1);position:relative}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,255,0.03) 2px,rgba(0,255,255,0.03) 4px)}
+.panel-title{font-size:16px;font-weight:700;letter-spacing:2px;color:#0ff;text-transform:uppercase;margin-bottom:6px;text-shadow:0 0 10px #0ff}
+.panel-desc{font-size:12px;color:#0bb;line-height:1.6;margin-bottom:1rem;letter-spacing:.5px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border:1px solid;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.bd{border-color:#f44;color:#f44;background:rgba(255,68,68,0.1)}
+.bg{border-color:#4f4;color:#4f4;background:rgba(68,255,68,0.1)}
+.bw{border-color:#ff4;color:#ff4;background:rgba(255,255,68,0.1)}
+.bi{border-color:#44f;color:#44f;background:rgba(68,68,255,0.1)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1rem}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+.section-label{font-size:10px;font-weight:700;letter-spacing:2px;color:#08f;text-transform:uppercase;margin-bottom:8px;text-shadow:0 0 5px #08f}
+input,select{width:100%;padding:8px 10px;font-size:12px;border:1px solid #0ff;border-radius:0;background:rgba(0,20,40,0.8);color:#0ff;font-family:'Courier New',monospace;margin-bottom:8px;box-shadow:inset 0 0 5px rgba(0,255,255,0.2);transition:all .2s}
+input:focus,select:focus{outline:none;border-color:#4f4;box-shadow:inset 0 0 10px rgba(0,255,255,0.3),0 0 15px rgba(0,255,255,0.4)}
+input::placeholder{color:#088}
+button.btn{width:100%;padding:10px;font-size:12px;border:2px solid;border-radius:0;cursor:pointer;background:transparent;font-family:'Courier New',monospace;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:all .2s;margin-bottom:6px}
+button.btn:hover{box-shadow:0 0 15px currentColor;transform:scale(1.02)}
+button.btn:active{transform:scale(0.98)}
+button.btn-bad{border-color:#f44;color:#f44;box-shadow:inset 0 0 10px rgba(255,68,68,0.2)}
+button.btn-bad:hover{background:rgba(255,68,68,0.2);box-shadow:0 0 20px #f44}
+button.btn-good{border-color:#4f4;color:#4f4;box-shadow:inset 0 0 10px rgba(68,255,68,0.2)}
+button.btn-good:hover{background:rgba(68,255,68,0.2);box-shadow:0 0 20px #4f4}
+pre{font-family:'Courier New',monospace;font-size:11px;line-height:1.8;background:rgba(0,10,20,0.8);border:1px solid #088;border-radius:0;padding:12px;overflow-x:auto;margin-bottom:8px;color:#0ff;white-space:pre;box-shadow:inset 0 0 10px rgba(0,255,255,0.1)}
+.hl-bad{background:rgba(255,68,68,0.3);color:#f88}
+.hl-good{background:rgba(68,255,68,0.3);color:#8f8}
+.out{font-size:11px;border:1px solid #0ff;border-radius:0;padding:12px;background:rgba(0,10,20,0.9);min-height:40px;line-height:1.7;color:#0ff;white-space:pre-wrap;font-family:'Courier New',monospace;box-shadow:inset 0 0 10px rgba(0,255,255,0.2);margin-bottom:8px}
+.out.bad{border-color:#f44;color:#f88;background:rgba(255,68,68,0.05)}
+.out.good{border-color:#4f4;color:#8f8;background:rgba(68,255,68,0.05)}
+.out.warn{border-color:#ff4;color:#ff8;background:rgba(255,255,68,0.05)}
+.explain-box{border-left:4px solid;padding:12px 14px;margin-top:12px;background:rgba(0,20,40,0.6);border-radius:0}
+.explain-box.bad{border-color:#f44}
+.explain-box.good{border-color:#4f4}
+.explain-box p{font-size:12px;color:#0bb;line-height:1.7;margin-bottom:6px;letter-spacing:.5px}
+.explain-box p:last-child{margin-bottom:0}
+.vuln-marker{display:inline-block;background:rgba(255,68,68,0.4);color:#f88;border-radius:0;font-family:'Courier New',monospace;font-size:10px;padding:2px 6px;border:1px solid #f44}
+.fix-marker{display:inline-block;background:rgba(68,255,68,0.4);color:#8f8;border-radius:0;font-family:'Courier New',monospace;font-size:10px;padding:2px 6px;border:1px solid #4f4}
+.log-line{font-family:'Courier New',monospace;font-size:11px;padding:4px 8px;border-bottom:1px dotted #088;color:#0bb}
+.log-line.attack{color:#f88;text-shadow:0 0 5px #f44}
+.log-line.blocked{color:#8f8;text-shadow:0 0 5px #4f4}
+.log-line.ok{color:#44f;text-shadow:0 0 5px #44f}
+.step-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid;border-radius:0;font-size:11px;background:transparent;margin:3px;cursor:default;font-weight:700;letter-spacing:1px}
+.step-chip.done{background:rgba(68,255,68,0.2);border-color:#4f4;color:#4f4;text-shadow:0 0 5px #4f4}
+.step-chip.current{background:rgba(68,68,255,0.2);border-color:#44f;color:#44f;text-shadow:0 0 5px #44f}
+.step-chip.locked{background:rgba(255,68,68,0.2);border-color:#f44;color:#f44;text-shadow:0 0 5px #f44}
+.progress-bar{height:8px;border:1px solid #0ff;border-radius:0;background:rgba(0,20,40,0.8);margin:8px 0;overflow:hidden;box-shadow:inset 0 0 10px rgba(0,255,255,0.1)}
+.progress-fill{height:100%;background:linear-gradient(90deg,#f44,#f88);border-radius:0;transition:width .1s;box-shadow:0 0 10px #f44}
+.progress-fill.safe{background:linear-gradient(90deg,#4f4,#8f8);box-shadow:0 0 10px #4f4}
+.status-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
+.status-inactive{background:#088;box-shadow:0 0 5px #088}
+.status-active{background:#0ff;box-shadow:0 0 10px #0ff;animation:pulse-cyan 1s infinite}
+.status-threat{background:#f44;box-shadow:0 0 10px #f44;animation:pulse-red .6s infinite}
+.status-safe{background:#4f4;box-shadow:0 0 10px #4f4;animation:pulse-green 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes pulse-cyan{0%{box-shadow:0 0 10px #0ff}50%{box-shadow:0 0 20px #0ff}100%{box-shadow:0 0 10px #0ff}}
+@keyframes pulse-red{0%{box-shadow:0 0 10px #f44}50%{box-shadow:0 0 20px #f44}100%{box-shadow:0 0 10px #f44}}
+@keyframes pulse-green{0%{box-shadow:0 0 10px #4f4}50%{box-shadow:0 0 20px #4f4}100%{box-shadow:0 0 10px #4f4}}
+.attack-flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;padding:10px;border:1px solid #088;background:rgba(0,20,40,0.6);border-radius:0}
+.flow-box{font-size:11px;padding:6px 10px;border:1px solid;border-radius:0;background:transparent;font-weight:700;letter-spacing:1px}
+.flow-arrow{color:#0bb;font-size:16px;font-weight:700}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:900px){.grid-3{grid-template-columns:1fr}}
+.metric-box{border:1px solid;border-radius:0;padding:10px;background:transparent;text-align:center}
+.metric-box.danger{border-color:#f44;color:#f44}
+.metric-box.warn{border-color:#ff4;color:#ff4}
+.metric-box.safe{border-color:#4f4;color:#4f4}
+.metric-label{font-size:10px;color:currentColor;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.metric-value{font-size:20px;font-weight:700;text-shadow:0 0 10px currentColor}
+</style>
+
+<div class="wrap">
+<div class="header">
+  <h1>⚠ SECURITY LAB ⚠</h1>
+  <p>◆ A06:2025 Insecure Design Vulnerability ◆</p>
+  <p>Real-world password reset attack chain</p>
+</div>
+
+<div class="tab-row">
+  <button class="tab on" onclick="go(0)">█ OVERVIEW</button>
+  <button class="tab" onclick="go(1)">█ VULN CODE</button>
+  <button class="tab" onclick="go(2)">█ EXPLOIT DEMO</button>
+  <button class="tab" onclick="go(3)">█ FIXED CODE</button>
+  <button class="tab" onclick="go(4)">█ DEFENSE TEST</button>
+</div>
+
+<div id="p0" class="pane on">
+  <div class="panel">
+    <span class="badge bd">THREAT LEVEL: CRITICAL</span>
+    <div class="panel-title">ShopCart — Password Reset Takeover Chain</div>
+    <div class="panel-desc">Fictional e-commerce platform with 3 cascading design flaws enabling complete account takeover. No password knowledge required.</div>
+
+    <div class="attack-flow">
+      <span class="flow-box" style="border-color:#4f4;color:#4f4">1. Request Reset</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-box" style="border-color:#f44;color:#f44">2. Weak Token</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-box" style="border-color:#f44;color:#f44">3. No Rate Limit</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-box" style="border-color:#f44;color:#f44">4. Brute Force</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-box" style="border-color:#f44;color:#f44">5. Takeover</span>
+    </div>
+
+    <div class="grid-3">
+      <div class="metric-box danger">
+        <div class="metric-label">FLAW 1</div>
+        <div class="metric-value">4-digit</div>
+        <div style="font-size:11px;margin-top:4px">Token space: 10k values</div>
+      </div>
+      <div class="metric-box danger">
+        <div class="metric-label">FLAW 2</div>
+        <div class="metric-value">∞</div>
+        <div style="font-size:11px;margin-top:4px">No rate limit on verify</div>
+      </div>
+      <div class="metric-box danger">
+        <div class="metric-label">FLAW 3</div>
+        <div class="metric-value">NEVER</div>
+        <div style="font-size:11px;margin-top:4px">Token never expires</div>
+      </div>
+    </div>
+
+    <div class="panel-desc" style="margin-top:1rem">
+      <span class="status-indicator status-threat"></span>RESULT: Any email account can be compromised in under 10 seconds without knowing the password.
+    </div>
+  </div>
+</div>
+
+<div id="p1" class="pane">
+  <div class="panel">
+    <span class="badge bd">VULNERABLE CODE</span>
+    <div class="panel-title">Backend: routes/auth.py</div>
+    <div class="panel-desc">Source code exhibiting all design flaws. Each vulnerability marked with <span class="vuln-marker">VULN</span>.</div>
+
+    <div class="section-label">→ STEP 1: TOKEN GENERATION</div>
+    <pre><span style="color:#0bb"># POST /api/reset/request</span>
+<span style="color:#0bb">@app.route('/api/reset/request', methods=['POST'])</span>
+def request_reset():
+    email = request.json.get('email')
+    user  = db.query("SELECT * FROM users WHERE email=?", email)
+
+    if user:
+        <span class="hl-bad"># VULN 1: Only 4 digits = 10k possibilities</span>
+        <span class="hl-bad">token = str(random.randint(1000, 9999))</span>
+
+        <span class="hl-bad"># VULN 2: Zero expiry — valid FOREVER</span>
+        <span class="hl-bad">db.execute("UPDATE users SET reset_token=?", token)</span>
+
+        send_email(email, f"Code: {token}")
+
+    return {"status": "ok"}</pre>
+
+    <div class="section-label" style="margin-top:1.5rem">→ STEP 2: TOKEN VERIFICATION</div>
+    <pre><span style="color:#0bb"># POST /api/reset/verify</span>
+<span style="color:#0bb">@app.route('/api/reset/verify', methods=['POST'])</span>
+def verify_token():
+    email = request.json.get('email')
+    token = request.json.get('token')
+
+    <span class="hl-bad"># VULN 3: No rate limit — unlimited attempts/sec</span>
+
+    user = db.query("WHERE email=? AND reset_token=?", email, token)
+
+    if user:
+        <span class="hl-bad"># VULN 4: Token NEVER cleared after use</span>
+        reset_url = generate_signed_url(user.id)
+        return {"status": "ok", "reset_url": reset_url}
+
+    return {"status": "invalid"}</pre>
+
+    <div class="explain-box bad">
+      <p><strong>● FLAW 1:</strong> <code>random.randint()</code> is NOT cryptographically secure. Only 9,000 possible values. Brute-force time: ~5 seconds.</p>
+      <p><strong>● FLAW 2:</strong> No expiry timestamp stored. Token remains valid indefinitely, even days later.</p>
+      <p><strong>● FLAW 3:</strong> Zero throttling on /verify endpoint. Attacker submits 10,000 attempts per second unobstructed.</p>
+      <p><strong>● FLAW 4:</strong> Token is never deleted after first use. Same token can be reused by attacker after victim resets password.</p>
+    </div>
+  </div>
+</div>
+
+<div id="p2" class="pane">
+  <div class="panel">
+    <span class="badge bd">LIVE EXPLOIT SIMULATION</span>
+    <div class="panel-title">Brute force attack — no defenses</div>
+    <div class="panel-desc">Watch the token enumeration happen in real-time. Each line of the server log represents one verification attempt.</div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-label"><span class="status-indicator status-threat"></span>Attacker Console</div>
+        <input id="victim-email" placeholder="victim@example.com" value="victim@gmail.com" />
+        <button class="btn btn-bad" onclick="attackStep1()">→ REQUEST RESET FOR EMAIL</button>
+        <div class="out bad" id="a1-out">READY</div>
+
+        <div style="margin-top:1.5rem" id="step2-wrap" style="display:none">
+          <button class="btn btn-bad" id="atk2-btn" onclick="attackStep2()" disabled>→ BRUTE FORCE 10K TOKENS</button>
+          <div class="progress-bar"><div class="progress-fill" id="brute-bar" style="width:0%"></div></div>
+          <div class="out bad" id="a2-out">STANDBY</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label"><span class="status-indicator status-inactive"></span>Server Access Log</div>
+        <div id="log-box" style="height:340px;overflow-y:auto;border:1px solid #088;border-radius:0;padding:10px;background:rgba(0,10,20,0.9)">
+          <div class="log-line">● SYSTEM READY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="p3" class="pane">
+  <div class="panel">
+    <span class="badge bg">HARDENED CODE</span>
+    <div class="panel-title">Backend: routes/auth.py (SECURED)</div>
+    <div class="panel-desc">All 4 flaws mitigated. Each fix marked with <span class="fix-marker">FIX</span>.</div>
+
+    <div class="section-label">→ STEP 1: SECURE TOKEN GENERATION</div>
+    <pre><span style="color:#0bb"># FIX: Rate limit decorator — 3 resets/hour per email</span>
+<span class="hl-good">@rate_limit(max=3, window="1h", key="email")</span>
+<span style="color:#0bb">@app.route('/api/reset/request', methods=['POST'])</span>
+def request_reset():
+    <span class="hl-good"># FIX 1: 256-bit cryptographically secure token</span>
+    <span class="hl-good">token = secrets.token_urlsafe(32)</span>
+
+    <span class="hl-good"># FIX 2: 15-minute expiry enforced server-side</span>
+    <span class="hl-good">expires_at = datetime.utcnow() + timedelta(minutes=15)</span>
+    <span class="hl-good">db.execute("UPDATE users SET reset_token=?,</span>
+    <span class="hl-good">            token_expires=?", token, expires_at)</span>
+
+    return {"status": "ok"}</pre>
+
+    <div class="section-label" style="margin-top:1.5rem">→ STEP 2: RATE-LIMITED VERIFICATION</div>
+    <pre><span class="hl-good"># FIX 3: Rate limit — max 5 attempts per 10 min per IP</span>
+<span class="hl-good">@rate_limit(max=5, window="10m", key="ip")</span>
+<span style="color:#0bb">@app.route('/api/reset/verify', methods=['POST'])</span>
+def verify_token():
+    user = db.query("WHERE email=? AND reset_token=?
+                     AND token_expires > ?",  <span class="hl-good"># Check expiry</span>
+                    email, token, datetime.utcnow())
+
+    if user:
+        <span class="hl-good"># FIX 4: Invalidate token immediately after use</span>
+        <span class="hl-good">db.execute("UPDATE users SET reset_token=NULL,</span>
+        <span class="hl-good">            token_expires=NULL WHERE id=?", user.id)</span>
+        return {"status": "ok"}</pre>
+
+    <div class="explain-box good">
+      <p><strong>● FIX 1:</strong> <code>secrets.token_urlsafe(32)</code> generates 256 bits of cryptographic entropy. Brute-force time: 2^128 years.</p>
+      <p><strong>● FIX 2:</strong> Token expires in 15 minutes. Even if leaked, the attack window is tiny.</p>
+      <p><strong>● FIX 3:</strong> Rate limiting makes brute-force require 2,000+ hours at 5 attempts per 10 minutes.</p>
+      <p><strong>● FIX 4:</strong> Single-use enforcement — token deleted immediately. Replayed tokens return "invalid".</p>
+    </div>
+  </div>
+</div>
+
+<div id="p4" class="pane">
+  <div class="panel">
+    <span class="badge bg">DEFENSE TEST</span>
+    <div class="panel-title">Same attack against hardened system</div>
+    <div class="panel-desc">Watch how each defense layer activates and shuts down the attack.</div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-label"><span class="status-indicator status-active"></span>Attacker Attempts</div>
+        <input id="victim-email2" placeholder="victim@example.com" value="victim@gmail.com" />
+        <button class="btn btn-bad" id="fix1-btn" onclick="fixStep1()">→ REQUEST RESET (×4)</button>
+        <div class="out" id="f1-out">READY</div>
+
+        <div style="margin-top:1.5rem">
+          <button class="btn btn-bad" id="fix2-btn" onclick="fixStep2()" disabled>→ ATTEMPT BRUTE FORCE</button>
+          <div class="progress-bar"><div class="progress-fill" id="fix-bar" style="width:0%;background:linear-gradient(90deg,#4f4,#8f8)"></div></div>
+          <div class="out good" id="f2-out">BLOCKED</div>
+        </div>
+
+        <div style="margin-top:1.5rem">
+          <button class="btn btn-bad" id="replay-btn" onclick="replayToken()" disabled>→ REPLAY TOKEN (single-use test)</button>
+          <div class="out" id="replay-out">READY AFTER SUCCESSFUL VERIFY</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label"><span class="status-indicator status-safe"></span>Defense Log</div>
+        <div id="fix-log-box" style="height:410px;overflow-y:auto;border:1px solid #4f4;border-radius:0;padding:10px;background:rgba(0,20,40,0.9)">
+          <div class="log-line ok">● HARDENED SYSTEM ONLINE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function go(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on',i===j));
+  document.querySelectorAll('.pane').forEach((p,j)=>p.classList.toggle('on',i===j));
+}
+
+let attackToken = null;
+let fixTokenUsed = false;
+let fixToken = null;
+let attackRunning = false;
+
+function addLog(boxId, text, cls){
+  const box = document.getElementById(boxId);
+  const d = document.createElement('div');
+  d.className = 'log-line ' + (cls||'');
+  const time = new Date().toLocaleTimeString();
+  d.textContent = `[${time}] ◆ ${text}`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function attackStep1(){
+  const email = document.getElementById('victim-email').value;
+  document.getElementById('log-box').innerHTML='<div class="log-line ok">● LOG RESET</div>';
+  attackToken = String(1000 + Math.floor(Math.random() * 9000));
+  addLog('log-box', `INCOMING POST /api/reset/request email=${email}`, 'ok');
+  addLog('log-box', `QUERY users WHERE email="${email}"`, 'ok');
+  addLog('log-box', `TOKEN GENERATED: ${attackToken} (4-digit, no crypto)`, 'attack');
+  addLog('log-box', `DB UPDATE: reset_token="${attackToken}" NO EXPIRY`, 'attack');
+  addLog('log-box', `EMAIL SENT to ${email}`, 'ok');
+  
+  const out = document.getElementById('a1-out');
+  out.className = 'out bad';
+  out.textContent = `200 OK\nToken: ${attackToken}\nStatus: No expiry. Valid forever.\nNext: Brute force /verify endpoint`;
+  
+  document.getElementById('step2-wrap').style.display = 'block';
+  document.getElementById('atk2-btn').disabled = false;
+}
+
+function attackStep2(){
+  if(attackRunning) return;
+  attackRunning = true;
+  const out = document.getElementById('a2-out');
+  const bar = document.getElementById('brute-bar');
+  const target = parseInt(attackToken);
+  let current = 1000;
+  
+  out.className = 'out warn';
+  addLog('log-box', 'INITIATING ENUMERATION ATTACK', 'attack');
+  addLog('log-box', `TARGET SPACE: 1000–9999 (9k tokens)`, 'attack');
+  addLog('log-box', `THROTTLE: NONE DETECTED`, 'attack');
+  
+  const iv = setInterval(()=>{
+    const batch = 300;
+    for(let i=0;i<batch&&current<=9999;i++,current++){
+      if(current === target){
+        clearInterval(iv);
+        bar.style.width='100%';
+        const tried = current - 1000;
+        addLog('log-box', `TOKEN MATCH FOUND: ${target}`, 'attack');
+        addLog('log-box', `ATTEMPTS: ${tried} | TIME: ${(tried*0.1/1000).toFixed(2)}s`, 'attack');
+        addLog('log-box', `ACCESS GRANTED: reset_url issued`, 'attack');
+        addLog('log-box', `STATUS: ACCOUNT COMPROMISED`, 'attack');
+        
+        out.className = 'out bad';
+        out.textContent = `SUCCESS\nToken found after ${tried} attempts\nTime: ${(tried*0.1/1000).toFixed(1)}s\nAccount taken over. Token still valid (not cleared).`;
+        attackRunning = false;
+        return;
+      }
+    }
+    const pct = Math.round((current-1000)/90);
+    bar.style.width = Math.min(pct,99)+'%';
+    out.textContent = `BRUTEFORCING...\nAttempts: ${current-1000}/9000\nStatus: No rate limit detected`;
+  }, 35);
+}
+
+let fixReqCount = 0;
+
+function fixStep1(){
+  fixReqCount++;
+  const email = document.getElementById('victim-email2').value;
+  const logBox = 'fix-log-box';
+  
+  if(fixReqCount === 1){
+    document.getElementById('fix-log-box').innerHTML='<div class="log-line ok">● HARDENED SYSTEM LOG</div>';
+    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    fixToken = '';
+    for(let i=0;i<43;i++) fixToken+=chars[Math.floor(Math.random()*chars.length)];
+    fixTokenUsed = false;
+    
+    addLog(logBox, `POST /api/reset/request email=${email}`, 'ok');
+    addLog(logBox, `RATE LIMIT CHECK: 1/3 per hour — ALLOWED`, 'ok');
+    addLog(logBox, `TOKEN GENERATED: ${fixToken.slice(0,12)}... (256-bit)`, 'ok');
+    addLog(logBox, `EXPIRY: 15 minutes from now`, 'ok');
+    
+    const out = document.getElementById('f1-out');
+    out.className = 'out good';
+    out.textContent = `200 OK\nRequest 1/3 allowed\nToken: ${fixToken.slice(0,16)}...\nExpiry: ${new Date(Date.now()+15*60000).toLocaleTimeString()}`;
+    
+    document.getElementById('fix2-btn').disabled = false;
+    document.getElementById('replay-btn').disabled = false;
+  } else if(fixReqCount <= 3){
+    addLog(logBox, `POST /api/reset/request email=${email}`, 'ok');
+    addLog(logBox, `RATE LIMIT: ${fixReqCount}/3 this hour — ALLOWED`, 'ok');
+    
+    const out = document.getElementById('f1-out');
+    out.className = 'out warn';
+    out.textContent = `Request ${fixReqCount}/3 allowed\nWARNING: approaching limit`;
+  } else {
+    addLog(logBox, `POST /api/reset/request email=${email}`, 'attack');
+    addLog(logBox, `RATE LIMIT EXCEEDED: 3/hour per email`, 'blocked');
+    addLog(logBox, `RESPONSE: 429 Too Many Requests`, 'blocked');
+    
+    const out = document.getElementById('f1-out');
+    out.className = 'out bad';
+    out.textContent = `429 TOO MANY REQUESTS\nRate limit: 3 per hour\nNext available: ${new Date(Date.now()+3600000).toLocaleTimeString()}`;
+  }
+}
+
+function fixStep2(){
+  const logBox = 'fix-log-box';
+  const out = document.getElementById('f2-out');
+  const bar = document.getElementById('fix-bar');
+  let attempts = 0;
+  
+  out.className = 'out warn';
+  addLog(logBox, `BRUTE FORCE ATTEMPT DETECTED`, 'attack');
+  addLog(logBox, `TARGET: /api/reset/verify`, 'attack');
+  
+  const iv = setInterval(()=>{
+    attempts++;
+    bar.style.width = (attempts * 20) + '%';
+    
+    if(attempts <= 5){
+      addLog(logBox, `Attempt ${attempts}: rejected by rate limit`, 'blocked');
+      out.textContent = `BLOCKED\nAttempt ${attempts}/5\nRate: 5 per 10 minutes per IP`;
+    }
+    
+    if(attempts === 5){
+      clearInterval(iv);
+      bar.style.width = '100%';
+      addLog(logBox, `IP RATE LIMIT HIT: 5 attempts / 10 min`, 'blocked');
+      addLog(logBox, `SECURITY ALERT: suspicious activity flagged`, 'blocked');
+      addLog(logBox, `TOKEN SPACE: 2^256 (impossible to brute)`, 'ok');
+      
+      out.className = 'out good';
+      out.textContent = `429 RATE LIMIT\nBlocked after 5 attempts\nWould need 2000+ hours to try all tokens\n256-bit entropy = immune to brute force`;
+    }
+  }, 400);
+}
+
+function replayToken(){
+  const logBox = 'fix-log-box';
+  const out = document.getElementById('replay-out');
+  
+  if(!fixToken){
+    out.className = 'out bad';
+    out.textContent = 'Run step 1 first';
+    return;
+  }
+  
+  if(!fixTokenUsed){
+    fixTokenUsed = true;
+    addLog(logBox, `POST /api/reset/verify token=${fixToken.slice(0,12)}...`, 'ok');
+    addLog(logBox, `EXPIRY CHECK: valid (15min window)`, 'ok');
+    addLog(logBox, `TOKEN MATCH: confirmed`, 'ok');
+    addLog(logBox, `IMMEDIATE ACTION: token deleted from DB`, 'ok');
+    addLog(logBox, `reset_token = NULL`, 'ok');
+    
+    out.className = 'out warn';
+    out.textContent = `FIRST USE: ACCEPTED\nToken immediately cleared (single-use)\nClick again to test replay...`;
+  } else {
+    addLog(logBox, `POST /api/reset/verify token=${fixToken.slice(0,12)}... (REPLAY)`, 'attack');
+    addLog(logBox, `QUERY: reset_token=? in DB`, 'blocked');
+    addLog(logBox, `RESULT: NULL (already used)`, 'blocked');
+    addLog(logBox, `RESPONSE: 400 Invalid or expired token`, 'blocked');
+    
+    out.className = 'out good';
+    out.textContent = `400 INVALID TOKEN\nToken was cleared after first use\nREPLAY ATTACK: BLOCKED`;
+  }
+}
+</script>
+</body>
+</html>
+
+
