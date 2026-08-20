@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A08:2025 - Software & Data Integrity Failures Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #00ffff;
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            color: #00ffff;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #00d9ff;
+            font-size: 1.1em;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: #16213e;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.3s;
+            border-radius: 5px;
+        }
+
+        .tab-btn:hover {
+            background: #00ffff;
+            color: #0a0a0a;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .tab-btn.active {
+            background: #00ffff;
+            color: #0a0a0a;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .scenario {
+            background: #16213e;
+            border-left: 4px solid #00ffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .scenario h3 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .code-block {
+            background: #0a0a0a;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            padding: 15px;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .code-block.vulnerable {
+            border-left: 4px solid #ff3333;
+        }
+
+        .code-block.secure {
+            border-left: 4px solid #00ff66;
+        }
+
+        .code-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .code-label.vulnerable {
+            color: #ff3333;
+        }
+
+        .code-label.secure {
+            color: #00ff66;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #00ffff;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00d9ff;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .warning-btn {
+            background: #ff3333;
+            color: #fff;
+        }
+
+        .warning-btn:hover {
+            background: #ff5555;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.5);
+        }
+
+        .success-btn {
+            background: #00ff66;
+            color: #000;
+        }
+
+        .success-btn:hover {
+            background: #00ff88;
+        }
+
+        .output {
+            background: #0a0a0a;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .output.error {
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .output.success {
+            border-color: #00ff66;
+            color: #00ff66;
+        }
+
+        .output.warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        .status.vulnerable {
+            background: rgba(255, 51, 51, 0.2);
+            color: #ff3333;
+            border: 1px solid #ff3333;
+        }
+
+        .status.secure {
+            background: rgba(0, 255, 102, 0.2);
+            color: #00ff66;
+            border: 1px solid #00ff66;
+        }
+
+        .description {
+            color: #a0a0a0;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .payload-input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .payload-input::placeholder {
+            color: #666;
+        }
+
+        .step {
+            background: rgba(0, 255, 255, 0.1);
+            border-left: 3px solid #00ffff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+        }
+
+        .step strong {
+            color: #00ffff;
+        }
+
+        .comparison {
+            margin: 20px 0;
+        }
+
+        .comparison-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-item {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-box {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .info-box h4 {
+            color: #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .exploit-demo {
+            background: #16213e;
+            border: 2px solid #ff3333;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .exploit-demo h4 {
+            color: #ff3333;
+            margin-bottom: 15px;
+        }
+
+        .real-world {
+            background: rgba(255, 170, 0, 0.1);
+            border-left: 4px solid #ffaa00;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .real-world h4 {
+            color: #ffaa00;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #0a0a0a;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #00d9ff);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            word-break: break-all;
+            color: #00ffff;
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #00ffff;
+            color: #a0a0a0;
+            font-size: 0.9em;
+        }
+
+        .lab-info {
+            background: rgba(0, 217, 255, 0.1);
+            border: 2px solid #00d9ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        .lab-info h2 {
+            color: #00d9ff;
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.1);
+            color: #ffff00;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>[!] A08:2025 - SOFTWARE & DATA INTEGRITY FAILURES [!]</h1>
+            <p>Interactive Laboratory & Exploitation Demonstrations</p>
+            <p class="subtitle">Learn how to identify, exploit, and fix integrity vulnerabilities</p>
+        </header>
+
+        <div class="lab-info">
+            <h2>📋 What You'll Learn</h2>
+            <p>
+                This lab demonstrates real-world <span class="highlight">data and software integrity failures</span>.
+                You'll explore vulnerable implementations, test exploits, and understand secure fixes.
+                Each scenario includes vulnerable code, exploitation steps, and remediation strategies.
+            </p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+            <button class="tab-btn" onclick="switchTab('scenario1')">Unsigned Updates</button>
+            <button class="tab-btn" onclick="switchTab('scenario2')">Data Tampering</button>
+            <button class="tab-btn" onclick="switchTab('scenario3')">Dependency Attacks</button>
+            <button class="tab-btn" onclick="switchTab('scenario4')">Signature Verification</button>
+            <button class="tab-btn" onclick="switchTab('scenario5')">Real-World Cases</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="scenario">
+                <h3>🎯 A08:2025 - Software or Data Integrity Failures Overview</h3>
+                
+                <div class="description">
+                    <p><strong>Definition:</strong> Weaknesses in software updates, CI/CD pipelines, dependency management, and data validation that allow attackers to inject malicious code or tamper with critical data.</p>
+                </div>
+
+                <div class="info-box">
+                    <h4>Key Vulnerability Areas</h4>
+                    <div class="step">
+                        <strong>1. Unsigned Software Updates</strong>
+                        <p>No cryptographic verification of updates → Attackers inject malware</p>
+                    </div>
+                    <div class="step">
+                        <strong>2. Dependency Tampering</strong>
+                        <p>Unverified third-party packages → Supply chain compromise</p>
+                    </div>
+                    <div class="step">
+                        <strong>3. Unsigned Code Commits</strong>
+                        <p>No GPG signature verification → Impersonation and code injection</p>
+                    </div>
+                    <div class="step">
+                        <strong>4. Data Tampering</strong>
+                        <p>No integrity checks (HMAC/signatures) → Data modification undetected</p>
+                    </div>
+                    <div class="step">
+                        <strong>5. Insecure Deserialization</strong>
+                        <p>Untrusted data deserialization → Remote code execution</p>
+                    </div>
+                </div>
+
+                <div class="real-world">
+                    <h4>⚠️ Real-World Impact</h4>
+                    <p><strong>SolarWinds (2020):</strong> $100M breach via compromised software updates</p>
+                    <p><strong>NotPetya (2017):</strong> $10B damage via trojanized software updates</p>
+                    <p><strong>Python Package Attack:</strong> Malicious packages targeting typos in dependency names</p>
+                </div>
+
+                <h3 style="margin-top: 30px;">Lab Scenarios</h3>
+                <p class="description">
+                    Navigate through the tabs above to explore different integrity failure scenarios.
+                    Each scenario includes:
+                </p>
+                <ul style="color: #a0a0a0; margin-left: 20px;">
+                    <li>❌ Vulnerable implementation with explanation</li>
+                    <li>⚠️ Live exploitation demonstration</li>
+                    <li>✅ Secure implementation comparison</li>
+                    <li>🔧 Remediation and best practices</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SCENARIO 1: UNSIGNED UPDATES -->
+        <div id="scenario1" class="tab-content">
+            <div class="scenario">
+                <h3>❌ Scenario 1: Unsigned Software Updates</h3>
+
+                <div class="description">
+                    When software updates are not cryptographically signed, attackers can intercept 
+                    and modify updates before installation, leading to malware injection.
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Vulnerable Implementation</h4>
+                <div class="code-block vulnerable">
+                    <div class="code-label vulnerable">
+                        <span class="icon">❌</span> Vulnerable Code (Python)
+                    </div>
+                    <pre>def download_update():
+    # NO SIGNATURE VERIFICATION!
+    response = requests.get('http://updates.example.com/app.exe',
+                           verify=False)  # CRITICAL!
+    
+    # Write directly without checking
+    with open('/opt/app/binary', 'wb') as f:
+        f.write(response.content)
+    
+    # Execute update (could be malware!)
+    subprocess.run(['/opt/app/binary', '--install'])
+    
+    return "Update installed"
+
+# VULNERABILITIES:
+# 1. HTTP instead of HTTPS
+# 2. verify=False ignores SSL errors
+# 3. No signature verification
+# 4. No checksum validation
+# 5. No rollback capability
+# Result: Attacker injects malware via MITM attack</pre>
+                </div>
+
+                <div class="exploit-demo">
+                    <h4>⚠️ Live Exploitation Demo</h4>
+                    <div class="step">
+                        <strong>Attack Flow:</strong>
+                        <p>1. Application checks for updates</p>
+                        <p>2. Attacker intercepts connection (MITM)</p>
+                        <p>3. Attacker returns malicious binary</p>
+                        <p>4. No verification performed</p>
+                        <p>5. Malware installed with app privileges</p>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="warning-btn" onclick="demonstrateUnsignedUpdate()">
+                            🔴 Simulate Unsigned Update
+                        </button>
+                        <button onclick="resetUnsignedUpdate()">Reset</button>
+                    </div>
+
+                    <div id="unsignedUpdateOutput" class="output"></div>
+                </div>
+
+                <h4 style="color: #00ff66; margin-top: 20px;">✅ Secure Implementation</h4>
+                <div class="code-block secure">
+                    <div class="code-label secure">
+                        <span class="icon">✅</span> Secure Code (Python)
+                    </div>
+                    <pre>import hashlib
+from cryptography.hazmat.primitives.asymmetric import padding
+
+TRUSTED_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----..."
+
+def verify_signature(data, signature):
+    """Verify cryptographic signature"""
+    try:
+        public_key.verify(signature, data, padding.PSS(...), 
+                         hashes.SHA256())
+        return True
+    except:
+        return False
+
+def download_update_secure():
+    # Use HTTPS with certificate verification
+    response = requests.get('https://updates.example.com/app.exe',
+                           verify=True)
+    
+    # Download signature separately
+    sig_response = requests.get('https://updates.example.com/app.exe.sig',
+                               verify=True)
+    signature = sig_response.content
+    
+    # VERIFY SIGNATURE
+    if not verify_signature(response.content, signature):
+        raise IntegrityError("Signature verification failed!")
+    
+    # VERIFY CHECKSUM
+    expected_hash = "a3c8d4e9f2b1c7d8e9f0a1b2c3d4e5f6"
+    actual_hash = hashlib.sha256(response.content).hexdigest()
+    if actual_hash != expected_hash:
+        raise IntegrityError("Checksum mismatch!")
+    
+    # BACKUP current version
+    shutil.copy('/opt/app/binary', '/opt/app/binary.backup')
+    
+    # ATOMIC write
+    with open('/opt/app/binary.tmp', 'wb') as f:
+        f.write(response.content)
+    
+    # Move atomically
+    os.rename('/opt/app/binary.tmp', '/opt/app/binary')
+    
+    return "Update verified and installed"</pre>
+                </div>
+
+                <div class="comparison">
+                    <h4 style="color: #00ffff;">Comparison: What Changed?</h4>
+                    <div class="comparison-item">
+                        <div>
+                            <h5 style="color: #ff3333;">Vulnerable ❌</h5>
+                            <p>• HTTP connection (no SSL)</p>
+                            <p>• No signature verification</p>
+                            <p>• Direct file write</p>
+                            <p>• No rollback</p>
+                            <p>• No checksums</p>
+                        </div>
+                        <div>
+                            <h5 style="color: #00ff66;">Secure ✅</h5>
+                            <p>• HTTPS with verification</p>
+                            <p>• RSA signature checked</p>
+                            <p>• Atomic file operations</p>
+                            <p>• Backup before update</p>
+                            <p>• SHA256 checksums</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4>🔧 Key Remediation Steps</h4>
+                    <div class="step">
+                        <strong>1. Cryptographic Signatures</strong>
+                        <p>Sign all updates with private key, verify with public key</p>
+                    </div>
+                    <div class="step">
+                        <strong>2. Checksum Verification</strong>
+                        <p>Calculate and verify SHA256 hash of downloaded file</p>
+                    </div>
+                    <div class="step">
+                        <strong>3. HTTPS & Certificate Pinning</strong>
+                        <p>Use HTTPS, pin update server certificate</p>
+                    </div>
+                    <div class="step">
+                        <strong>4. Atomic Operations</strong>
+                        <p>Update to temp file first, then atomic move</p>
+                    </div>
+                    <div class="step">
+                        <strong>5. Rollback Capability</strong>
+                        <p>Keep backup of previous version</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENARIO 2: DATA TAMPERING -->
+        <div id="scenario2" class="tab-content">
+            <div class="scenario">
+                <h3>❌ Scenario 2: Data Tampering & Integrity</h3>
+
+                <div class="description">
+                    When APIs return data without integrity verification, attackers can modify 
+                    responses (via MITM) and applications will accept the tampered data.
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Vulnerable Implementation</h4>
+                <div class="code-block vulnerable">
+                    <div class="code-label vulnerable">
+                        <span class="icon">❌</span> Vulnerable Code (JavaScript/API)
+                    </div>
+                    <pre>// VULNERABLE: No integrity check
+async function loadUserProfile() {
+    const response = await fetch('/api/user/profile');
+    const userData = await response.json();
+    
+    // DIRECTLY USE DATA - NO VERIFICATION!
+    document.getElementById('balance').textContent = userData.balance;
+    document.getElementById('email').textContent = userData.email;
+    
+    return userData;
+}
+
+// ATTACK SCENARIO:
+// 1. Attacker intercepts response (MITM)
+// 2. Changes balance from $100 to $999,999
+// 3. Application displays tampered value
+// 4. User sees false balance
+// Result: Potential fraud/exploitation</pre>
+                </div>
+
+                <div class="exploit-demo">
+                    <h4>⚠️ Live Data Tampering Demo</h4>
+                    <div class="button-group">
+                        <button class="warning-btn" onclick="demonstrateDataTampering()">
+                            🔴 Simulate Data Tampering
+                        </button>
+                        <button onclick="resetDataTampering()">Reset</button>
+                    </div>
+                    <div id="dataTA_output" class="output"></div>
+                </div>
+
+                <h4 style="color: #00ff66; margin-top: 20px;">✅ Secure Implementation with HMAC</h4>
+                <div class="code-block secure">
+                    <div class="code-label secure">
+                        <span class="icon">✅</span> Secure Code (JavaScript)
+                    </div>
+                    <pre>async function loadUserProfileSecure() {
+    try {
+        const response = await fetch('/api/user/profile');
+        const result = await response.json();
+        
+        const { data, signature, timestamp } = result;
+        
+        // VERIFY TIMESTAMP (prevent replay)
+        const timeDiff = Date.now() - new Date(timestamp).getTime();
+        if (timeDiff > 3600000) { // 1 hour
+            throw new Error('Data too old - possible replay attack');
+        }
+        
+        // VERIFY HMAC SIGNATURE
+        const serverSecret = 'API_INTEGRITY_SECRET';
+        const expectedSig = await generateHMAC(data, serverSecret);
+        
+        if (signature !== expectedSig) {
+            throw new Error('Data tampering detected!');
+        }
+        
+        // NOW SAFE TO USE DATA
+        const userData = JSON.parse(data);
+        document.getElementById('balance').textContent = userData.balance;
+        document.getElementById('email').textContent = userData.email;
+        
+    } catch (error) {
+        console.error('Data integrity check failed:', error);
+        document.getElementById('error').textContent = 
+            'Failed to load data - integrity check failed';
+    }
+}</pre>
+                </div>
+
+                <div class="info-box">
+                    <h4>How HMAC Protection Works</h4>
+                    <div class="step">
+                        <strong>HMAC (Hash-based Message Authentication Code)</strong>
+                        <p>Combines data with secret key to create unforgeable signature</p>
+                    </div>
+                    <div class="step">
+                        <strong>Server-Side:</strong>
+                        <p>Server calculates: HMAC = SHA256(data + secret_key)</p>
+                        <p>Sends: data + HMAC signature + timestamp</p>
+                    </div>
+                    <div class="step">
+                        <strong>Client-Side:</strong>
+                        <p>Verify: Calculate HMAC with same data</p>
+                        <p>Compare with received signature</p>
+                        <p>If mismatch → Data was tampered</p>
+                    </div>
+                    <div class="step">
+                        <strong>Why It Works:</strong>
+                        <p>Attacker can't modify data without knowing secret_key</p>
+                        <p>Attacker can't forge valid HMAC</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Interactive HMAC Demo</h4>
+                <div style="background: #16213e; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <label style="color: #00ffff;">Data to Protect:</label>
+                    <input type="text" id="hmacData" class="payload-input" 
+                           value='{"user_id": 123, "balance": 1000}' 
+                           placeholder="Enter data">
+                    
+                    <button onclick="calculateHMAC()" style="margin-top: 10px;">
+                        🔐 Calculate HMAC Signature
+                    </button>
+                    
+                    <div id="hmacOutput" class="output" style="display: none;"></div>
+
+                    <div id="hmacTamperSection" style="display: none; margin-top: 20px;">
+                        <label style="color: #ffaa00;">Try to Tamper with Data:</label>
+                        <input type="text" id="tamperedData" class="payload-input"
+                               placeholder="Modify the data above">
+                        
+                        <button class="warning-btn" onclick="verifyHMAC()" 
+                                style="margin-top: 10px;">
+                            🔓 Attempt Verification with Tampered Data
+                        </button>
+                        
+                        <div id="hmacVerifyOutput" class="output" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENARIO 3: DEPENDENCY ATTACKS -->
+        <div id="scenario3" class="tab-content">
+            <div class="scenario">
+                <h3>❌ Scenario 3: Dependency Tampering & Supply Chain Attacks</h3>
+
+                <div class="description">
+                    When dependencies are not pinned to specific versions or verified with checksums, 
+                    attackers can inject malicious code through compromised or typosquatted packages.
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Vulnerable: No Version Pinning</h4>
+                <div class="code-block vulnerable">
+                    <div class="code-label vulnerable">
+                        <span class="icon">❌</span> Vulnerable package.json (Node.js)
+                    </div>
+                    <pre>{
+  "dependencies": {
+    "lodash": "*",           // LATEST VERSION - unpredictable!
+    "express": "latest",     // No version control
+    "axios": "^4.0.0",       // Version range - allows updates
+    "moment": "~2.29.0"      // Still allows patch updates
+  }
+  // NO lock file committed!
+}
+
+// ATTACK SCENARIO:
+// Day 1: npm install (gets lodash 4.17.20 - safe)
+// Day 2: Attacker publishes malicious lodash 4.17.21
+// Day 3: New developer runs npm install (gets malicious version!)
+// Day 4: Malware executes in your application
+// Result: Supply chain compromise</pre>
+                </div>
+
+                <div class="exploit-demo">
+                    <h4>⚠️ Dependency Attack Simulation</h4>
+                    <div class="button-group">
+                        <button class="warning-btn" onclick="simulateDependencyAttack()">
+                            🔴 Simulate Typosquatting Attack
+                        </button>
+                        <button onclick="resetDependencyAttack()">Reset</button>
+                    </div>
+                    <div id="dependencyOutput" class="output"></div>
+                </div>
+
+                <h4 style="color: #00ff66; margin-top: 20px;">✅ Secure Implementation with Lock Files</h4>
+                <div class="code-block secure">
+                    <div class="code-label secure">
+                        <span class="icon">✅</span> Secure package.json (Node.js)
+                    </div>
+                    <pre>{
+  "dependencies": {
+    "lodash": "4.17.21",     // EXACT version
+    "express": "4.18.2",      // PINNED version
+    "axios": "1.6.2",         // EXACT version
+    "moment": "2.29.4"        // NO ranges
+  }
+}
+
+// package-lock.json (COMMITTED to git):
+// {
+//   "dependencies": {
+//     "lodash": {
+//       "version": "4.17.21",
+//       "resolved": "https://registry.npmjs.org/lodash/-/...",
+//       "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE...",
+//       // SHA512 checksum!
+//     }
+//   }
+// }
+
+// DEPLOYMENT: Use npm ci (not npm install)
+// npm ci reads lock file EXACTLY
+// Verifies checksums match
+// Uses EXACT versions every time
+// Result: Reproducible, secure builds</pre>
+                </div>
+
+                <div class="info-box">
+                    <h4>🔍 What's the Difference?</h4>
+                    <div class="step">
+                        <strong>Vulnerable Approach:</strong>
+                        <p>• No version pinning → Different builds on different days</p>
+                        <p>• No lock file → New versions installed automatically</p>
+                        <p>• No checksums → Can't verify package integrity</p>
+                    </div>
+                    <div class="step">
+                        <strong>Secure Approach:</strong>
+                        <p>• Exact version pinning → Same build every time</p>
+                        <p>• Lock file with checksums → Verify authenticity</p>
+                        <p>• npm ci command → Uses lock file, not package.json</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Dependency Check Simulator</h4>
+                <div style="background: #16213e; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <label style="color: #00ffff;">Check Package for Vulnerabilities:</label>
+                    <div class="button-group">
+                        <button onclick="checkPackage('safe')">✅ Check 'lodash@4.17.21'</button>
+                        <button onclick="checkPackage('vulnerable')">⚠️ Check 'lodash@3.10.1'</button>
+                        <button onclick="checkPackage('malicious')">❌ Check 'lodash-typo@1.0.0'</button>
+                    </div>
+                    <div id="packageCheckOutput" class="output" style="display: none;"></div>
+                </div>
+
+                <div class="real-world">
+                    <h4>Real-World Examples</h4>
+                    <p><strong>event-stream Package (2018):</strong> 8M weekly downloads, compromised with Bitcoin stealer</p>
+                    <p><strong>Typosquatting Attacks:</strong> 'fs' → 'fs-extra' confusion, 'npm' → 'npn' malicious packages</p>
+                    <p><strong>Left-Pad Incident (2016):</strong> Unpublished package broke 1000s of projects</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENARIO 4: SIGNATURE VERIFICATION -->
+        <div id="scenario4" class="tab-content">
+            <div class="scenario">
+                <h3>✅ Scenario 4: Cryptographic Signature Verification</h3>
+
+                <div class="description">
+                    Demonstrates how digital signatures prove authenticity and integrity. 
+                    This is the core defense against tampering.
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">How Digital Signatures Work</h4>
+                <div class="info-box">
+                    <h4>The Process</h4>
+                    <div class="step">
+                        <strong>1. Signing (Server/Publisher Side):</strong>
+                        <p>• Create hash of file: SHA256(file) = HASH1</p>
+                        <p>• Encrypt hash with private key: SIGNATURE = RSA_encrypt(HASH1, private_key)</p>
+                        <p>• Send: FILE + SIGNATURE</p>
+                    </div>
+                    <div class="step">
+                        <strong>2. Verification (Client Side):</strong>
+                        <p>• Decrypt signature with public key: HASH2 = RSA_decrypt(SIGNATURE, public_key)</p>
+                        <p>• Calculate file hash: HASH1 = SHA256(file)</p>
+                        <p>• Compare: If HASH1 == HASH2, file is authentic!</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Interactive Signature Demo</h4>
+                <div style="background: #16213e; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <label style="color: #00ffff;">File Content:</label>
+                    <textarea id="fileContent" class="payload-input" style="height: 80px;">
+{
+  "version": "1.2.0",
+  "release": "production",
+  "build": "safe"
+}</textarea>
+
+                    <button onclick="signFile()" style="margin-top: 10px;">
+                        🔐 Sign File (Create Signature)
+                    </button>
+
+                    <div id="signatureOutput" style="display: none; margin-top: 20px;">
+                        <h4 style="color: #00ffff;">Generated Signature</h4>
+                        <div class="hash-display" id="generatedSignature"></div>
+
+                        <button onclick="showTamperSection()" style="margin-top: 10px;">
+                            👿 Try to Tamper with File
+                        </button>
+
+                        <div id="tamperSection" style="display: none; margin-top: 20px;">
+                            <label style="color: #ffaa00;">Tampered File Content:</label>
+                            <textarea id="tamperedFile" class="payload-input" style="height: 80px;">
+{
+  "version": "1.2.0",
+  "release": "production",
+  "build": "malware"
+}</textarea>
+
+                            <button class="warning-btn" onclick="verifySignature()" 
+                                   style="margin-top: 10px;">
+                                🔓 Verify Tampered File
+                            </button>
+
+                            <div id="verifyOutput" style="display: none; margin-top: 20px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Why This Protects You</h4>
+                <div class="info-box">
+                    <div class="step">
+                        <strong>Even if attacker intercepts:</strong>
+                        <p>✅ Can't forge signature (needs private key)</p>
+                        <p>✅ Can't modify file (signature won't match)</p>
+                        <p>✅ Tampering immediately detected</p>
+                    </div>
+                    <div class="step">
+                        <strong>Protects against:</strong>
+                        <p>• Man-in-the-middle (MITM) attacks</p>
+                        <p>• Network-level tampering</p>
+                        <p>• Compromised download servers</p>
+                        <p>• Supply chain injection</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Real-World Implementation</h4>
+                <div class="code-block secure">
+                    <div class="code-label secure">
+                        <span class="icon">✅</span> Signature Verification (.NET Core)
+                    </div>
+                    <pre>public class UpdateVerifier {
+    private const string TRUSTED_CERT_HASH = 
+        "A1B2C3D4E5F6...";  // Pinned certificate
+    
+    private const string TRUSTED_PUBLIC_KEY = 
+        "-----BEGIN PUBLIC KEY-----\nMIIBIjA...";
+    
+    public bool VerifyUpdate(byte[] updateData, 
+                             byte[] signature) {
+        try {
+            using (var rsa = RSA.Create()) {
+                rsa.ImportFromPem(TRUSTED_PUBLIC_KEY);
+                
+                // Verify RSA signature
+                return rsa.VerifyData(
+                    updateData,
+                    signature,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1
+                );
+            }
+        } catch (Exception ex) {
+            LogError($"Signature verification failed: {ex}");
+            return false;
+        }
+    }
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCENARIO 5: REAL-WORLD CASES -->
+        <div id="scenario5" class="tab-content">
+            <div class="scenario">
+                <h3>⚠️ Real-World: SolarWinds & Supply Chain Attacks</h3>
+
+                <div class="real-world">
+                    <h4>December 2020: SolarWinds Supply Chain Compromise</h4>
+                    <p><strong>Victims:</strong> 18,000+ organizations including US Treasury, State Department, Pentagon</p>
+                    <p><strong>Method:</strong> Trojaned Orion software update (digitally signed!)</p>
+                    <p><strong>Damage:</strong> $100M+ incident response costs</p>
+                    <p><strong>Duration:</strong> 8+ months before detection</p>
+                </div>
+
+                <h4 style="color: #ffaa00; margin-top: 20px;">What Went Wrong</h4>
+                <div class="exploit-demo">
+                    <div class="step">
+                        <strong>1. Build Pipeline Compromised:</strong>
+                        <p>Attacker gained access to SolarWinds' build system</p>
+                    </div>
+                    <div class="step">
+                        <strong>2. Code Injection:</strong>
+                        <p>Injected malicious code into Orion software</p>
+                    </div>
+                    <div class="step">
+                        <strong>3. Legitimate Signature:</strong>
+                        <p>Build system signed update with REAL SolarWinds certificate</p>
+                    </div>
+                    <div class="step">
+                        <strong>4. Trust Exploited:</strong>
+                        <p>Customers trusted the signature - installed malware</p>
+                    </div>
+                    <div class="step">
+                        <strong>5. Backdoor Established:</strong>
+                        <p>SUNBURST malware gave attacker persistent access</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Key Lessons</h4>
+                <div class="info-box">
+                    <div class="step">
+                        <strong>1. Secure Your Build Pipeline</strong>
+                        <p>Code signing only protects if build system is secure</p>
+                        <p>If pipeline is compromised, attacker can sign malware legitimately</p>
+                    </div>
+                    <div class="step">
+                        <strong>2. Defense in Depth</strong>
+                        <p>Don't rely on signatures alone</p>
+                        <p>Add: Code review, integrity checks, monitoring, testing</p>
+                    </div>
+                    <div class="step">
+                        <strong>3. Monitor Execution Behavior</strong>
+                        <p>Even legitimate software can have suspicious behavior</p>
+                        <p>Monitor: Network connections, file access, process creation</p>
+                    </div>
+                    <div class="step">
+                        <strong>4. Incident Response</strong>
+                        <p>Fast detection and response minimizes damage</p>
+                        <p>SolarWinds undetected for 8+ months = huge breach</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">How to Prevent Similar Attacks</h4>
+                <div style="background: #16213e; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <div class="step">
+                        <strong>✅ Build System Security</strong>
+                        <p>Access control, audit logging, isolated build environment</p>
+                    </div>
+                    <div class="step">
+                        <strong>✅ Code Review</strong>
+                        <p>All changes reviewed before merge, signed commits</p>
+                    </div>
+                    <div class="step">
+                        <strong>✅ Artifact Signing</strong>
+                        <p>Sign build artifacts, verify before deployment</p>
+                    </div>
+                    <div class="step">
+                        <strong>✅ Dependency Verification</strong>
+                        <p>Pin versions, verify checksums, scan for vulnerabilities</p>
+                    </div>
+                    <div class="step">
+                        <strong>✅ Runtime Monitoring</strong>
+                        <p>Detect suspicious behavior during execution</p>
+                    </div>
+                    <div class="step">
+                        <strong>✅ Incident Detection</strong>
+                        <p>Fast response to anomalies, threat hunting</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #ffaa00; margin-top: 20px;">Other Notable Supply Chain Attacks</h4>
+                <div class="comparison-item">
+                    <div>
+                        <h5 style="color: #ffaa00;">NotPetya (2017)</h5>
+                        <p><strong>Attack:</strong> Compromised software update from Ukrainian tax software</p>
+                        <p><strong>Spread:</strong> Wormable ransomware via supply chain</p>
+                        <p><strong>Damage:</strong> $10B+ from companies like Maersk, Merck, FedEx</p>
+                    </div>
+                    <div>
+                        <h5 style="color: #ffaa00;">Event-Stream (2018)</h5>
+                        <p><strong>Attack:</strong> Popular npm package compromised</p>
+                        <p><strong>Payload:</strong> Bitcoin stealer targeting crypto wallets</p>
+                        <p><strong>Download:</strong> 8M weekly downloads = massive reach</p>
+                    </div>
+                </div>
+
+                <h4 style="color: #00ffff; margin-top: 20px;">Testing Your Integrity Controls</h4>
+                <div style="background: #16213e; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <div class="step">
+                        <strong>Test 1: Signature Verification</strong>
+                        <p>Try to install unsigned updates → Should be rejected</p>
+                    </div>
+                    <div class="step">
+                        <strong>Test 2: Tampered Files</strong>
+                        <p>Modify file and try to verify → Should fail</p>
+                    </div>
+                    <div class="step">
+                        <strong>Test 3: Invalid Checksums</strong>
+                        <p>Wrong hash → Should be detected</p>
+                    </div>
+                    <div class="step">
+                        <strong>Test 4: Dependency Pinning</strong>
+                        <p>Verify exact versions are used in builds</p>
+                    </div>
+                    <div class="step">
+                        <strong>Test 5: Code Review</strong>
+                        <p>Ensure all commits are signed by known developers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>A08:2025 - Software or Data Integrity Failures Lab</p>
+            <p>Educational demonstration for OWASP Top 10 security vulnerabilities</p>
+            <p style="margin-top: 10px; color: #666;">
+                ⚠️ This lab demonstrates vulnerabilities for educational purposes only.
+                Always follow responsible disclosure practices.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Deactivate all buttons
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate clicked button
+            event.target.classList.add('active');
+        }
+
+        // SCENARIO 1: Unsigned Updates
+        function demonstrateUnsignedUpdate() {
+            const output = document.getElementById('unsignedUpdateOutput');
+            output.innerHTML = `
+                <span class="status vulnerable">VULNERABLE SCENARIO</span>
+                <p style="margin-top: 15px;">🔴 <strong>Step 1:</strong> Application checks for updates</p>
+                <p>→ GET http://updates.example.com/app.exe</p>
+                
+                <p style="margin-top: 10px;">🔴 <strong>Step 2:</strong> No HTTPS verification</p>
+                <p>→ verify=False (SSL errors ignored!)</p>
+                
+                <p style="margin-top: 10px;">⚠️ <strong>Step 3:</strong> Attacker intercepts connection (MITM)</p>
+                <p>→ Attacker's machine: 192.168.1.100</p>
+                <p>→ Attacker responds with malicious binary</p>
+                
+                <p style="margin-top: 10px;">❌ <strong>Step 4:</strong> No signature verification performed</p>
+                <p>→ Application trusts response blindly</p>
+                
+                <p style="margin-top: 10px;">💀 <strong>Step 5:</strong> Malicious binary installed</p>
+                <p>→ subprocess.run(['/opt/app/binary', '--install'])</p>
+                <p>→ Malware executes with app privileges</p>
+                
+                <p style="margin-top: 15px; color: #ff3333;">
+                    <strong>Result: Complete system compromise</strong>
+                </p>
+                <p style="color: #ffaa00;">Impact: Attacker gains persistent access, data theft, lateral movement</p>
+            `;
+        }
+
+        function resetUnsignedUpdate() {
+            document.getElementById('unsignedUpdateOutput').innerHTML = '';
+        }
+
+        // SCENARIO 2: Data Tampering
+        function demonstrateDataTampering() {
+            const output = document.getElementById('dataTA_output');
+            output.innerHTML = `
+                <span class="status vulnerable">VULNERABLE SCENARIO</span>
+                <p style="margin-top: 15px;">📊 <strong>Original API Response:</strong></p>
+                <div style="background: #0a0a0a; padding: 10px; border-radius: 3px; margin: 10px 0;">
+                    {"user_id": 123, "balance": 1000, "email": "user@example.com"}
+                </div>
+                
+                <p style="margin-top: 15px;">🔴 <strong>Step 1:</strong> No integrity check in code</p>
+                <p>→ const userData = await response.json();</p>
+                <p>→ No signature verification!</p>
+                
+                <p style="margin-top: 10px;">⚠️ <strong>Step 2:</strong> Attacker intercepts response (MITM)</p>
+                <p>→ Modifies JSON before reaching browser</p>
+                
+                <p style="margin-top: 10px;">💰 <strong>Step 3:</strong> Tampered Response Delivered</p>
+                <div style="background: #0a0a0a; padding: 10px; border-radius: 3px; margin: 10px 0;">
+                    {"user_id": 123, "balance": 999999, "email": "attacker@evil.com"}
+                </div>
+                <p>→ balance: 1000 → 999999 (altered!)</p>
+                <p>→ email: user@example.com → attacker@evil.com (redirected!)</p>
+                
+                <p style="margin-top: 10px;">😵 <strong>Step 4:</strong> Application displays tampered data</p>
+                <p>→ No verification performed</p>
+                <p>→ User sees false balance</p>
+                
+                <p style="margin-top: 15px; color: #ff3333;">
+                    <strong>Result: Data integrity compromised</strong>
+                </p>
+                <p style="color: #ffaa00;">Attacker can: Modify balances, redirect emails, change settings, commit fraud</p>
+            `;
+        }
+
+        function resetDataTampering() {
+            document.getElementById('dataTA_output').innerHTML = '';
+        }
+
+        // HMAC Demo
+        let hmacSignature = null;
+
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(16).padStart(16, '0');
+        }
+
+        function calculateHMAC() {
+            const data = document.getElementById('hmacData').value;
+            const secret = 'API_INTEGRITY_SECRET';
+            
+            // Simulate HMAC calculation
+            hmacSignature = simpleHash(data + secret);
+            
+            const output = document.getElementById('hmacOutput');
+            output.style.display = 'block';
+            output.className = 'output success';
+            output.innerHTML = `
+                <span class="status secure">HMAC SIGNATURE GENERATED</span>
+                <p style="margin-top: 15px;"><strong>Data:</strong></p>
+                <div class="hash-display">${data}</div>
+                
+                <p style="margin-top: 15px;"><strong>Generated HMAC Signature:</strong></p>
+                <div class="hash-display">${hmacSignature}</div>
+                
+                <p style="margin-top: 15px; color: #00ff66;">
+                    ✅ Signature successfully generated!
+                </p>
+                <p>This signature proves data authenticity. Any modification will break it.</p>
+            `;
+            
+            document.getElementById('hmacTamperSection').style.display = 'block';
+        }
+
+        function verifyHMAC() {
+            const originalData = document.getElementById('hmacData').value;
+            const tamperedData = document.getElementById('tamperedData').value;
+            const secret = 'API_INTEGRITY_SECRET';
+            
+            const recalculatedSig = simpleHash(tamperedData + secret);
+            
+            const output = document.getElementById('hmacVerifyOutput');
+            output.style.display = 'block';
+            
+            if (recalculatedSig === hmacSignature) {
+                output.className = 'output success';
+                output.innerHTML = `
+                    <span class="status secure">VERIFICATION PASSED</span>
+                    <p style="margin-top: 15px; color: #00ff66;">
+                        ✅ No tampering detected - data integrity confirmed!
+                    </p>
+                    <p>Recalculated signature matches received signature.</p>
+                `;
+            } else {
+                output.className = 'output error';
+                output.innerHTML = `
+                    <span class="status vulnerable">VERIFICATION FAILED - TAMPERING DETECTED!</span>
+                    <p style="margin-top: 15px;">
+                        <strong>Original Signature:</strong><br/>
+                        <span class="hash-display">${hmacSignature}</span>
+                    </p>
+                    <p>
+                        <strong>Recalculated Signature (tampered data):</strong><br/>
+                        <span class="hash-display">${recalculatedSig}</span>
+                    </p>
+                    <p style="margin-top: 15px; color: #ff3333;">
+                        ❌ Signatures don't match!<br/>
+                        Data has been modified or tampered with!
+                    </p>
+                    <p>This is exactly how HMAC protects your data.</p>
+                `;
+            }
+        }
+
+        // Dependency Attack
+        function simulateDependencyAttack() {
+            const output = document.getElementById('dependencyOutput');
+            output.innerHTML = `
+                <span class="status vulnerable">SUPPLY CHAIN ATTACK SIMULATION</span>
+                
+                <p style="margin-top: 15px;">📦 <strong>Day 1: Initial Installation</strong></p>
+                <p>npm install lodash (gets safe version 4.17.20)</p>
+                <p style="color: #00ff66;">✅ All systems working</p>
+                
+                <p style="margin-top: 15px;">📦 <strong>Day 2: Attacker Publishes Malicious Package</strong></p>
+                <p>Attacker publishes lodash@4.17.21 with crypto miner</p>
+                <p style="color: #ffaa00;">⚠️ No version pinning, so next install will get new version</p>
+                
+                <p style="margin-top: 15px;">📦 <strong>Day 3: New Developer Joins Team</strong></p>
+                <p>Developer clones repo and runs: npm install</p>
+                <p style="color: #ff3333;">❌ Gets malicious lodash@4.17.21 (no lock file!)</p>
+                
+                <p style="margin-top: 15px;">⚠️ <strong>Day 4: Application Deployed</strong></p>
+                <p>New version deployed to production</p>
+                <p>Crypto miner starts running in background</p>
+                
+                <p style="margin-top: 15px;">💰 <strong>Impact: Supply Chain Compromise</strong></p>
+                <div style="background: #0a0a0a; padding: 10px; border-radius: 3px; margin: 10px 0;">
+                    CPU Usage: 5% → 95% (crypto miner)<br/>
+                    Network Traffic: 10MB/hr → 1GB/hr (data exfiltration)<br/>
+                    Affected: All users running latest code<br/>
+                    Detection Time: Days or weeks later
+                </div>
+                
+                <p style="color: #ff3333; margin-top: 15px;">
+                    <strong>Root Cause:</strong> No version pinning + No lock file
+                </p>
+            `;
+        }
+
+        function resetDependencyAttack() {
+            document.getElementById('dependencyOutput').innerHTML = '';
+        }
+
+        function checkPackage(type) {
+            const output = document.getElementById('packageCheckOutput');
+            output.style.display = 'block';
+            
+            if (type === 'safe') {
+                output.className = 'output success';
+                output.innerHTML = `
+                    <span class="status secure">SAFE PACKAGE</span>
+                    <p style="margin-top: 15px;"><strong>Package:</strong> lodash@4.17.21</p>
+                    <p><strong>Status:</strong> ✅ Latest stable version</p>
+                    <p><strong>Vulnerabilities:</strong> 0 known CVEs</p>
+                    <p><strong>Checksum (SHA512):</strong></p>
+                    <div class="hash-display">v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1...</div>
+                    <p style="margin-top: 10px; color: #00ff66;">✅ Safe to use - verified and trusted</p>
+                `;
+            } else if (type === 'vulnerable') {
+                output.className = 'output warning';
+                output.innerHTML = `
+                    <span class="status vulnerable">OUTDATED PACKAGE</span>
+                    <p style="margin-top: 15px;"><strong>Package:</strong> lodash@3.10.1</p>
+                    <p><strong>Status:</strong> ⚠️ Very old version (2015)</p>
+                    <p><strong>Known Vulnerabilities:</strong> 5+ CVEs</p>
+                    <p style="margin-top: 10px; color: #ffaa00;">⚠️ Should upgrade to latest version</p>
+                `;
+            } else if (type === 'malicious') {
+                output.className = 'output error';
+                output.innerHTML = `
+                    <span class="status vulnerable">MALICIOUS PACKAGE DETECTED!</span>
+                    <p style="margin-top: 15px;"><strong>Package:</strong> lodash-typo@1.0.0</p>
+                    <p><strong>Status:</strong> ❌ TYPOSQUATTING ATTACK</p>
+                    <p><strong>Detection:</strong> Unregistered publisher, suspicious behavior</p>
+                    <p><strong>Payload:</strong> Crypto miner + data exfiltration</p>
+                    <p style="margin-top: 10px; color: #ff3333;">
+                        ❌ BLOCKED - Do not install!<br/>
+                        This is a malicious package impersonating 'lodash'
+                    </p>
+                    <p style="margin-top: 10px; color: #ffaa00;">
+                        Tip: Check package name carefully - 'lodash' not 'lodash-typo'
+                    </p>
+                `;
+            }
+        }
+
+        // Signature Demo
+        let fileHash = null;
+
+        function signFile() {
+            const content = document.getElementById('fileContent').value;
+            
+            // Simple hash for demo
+            fileHash = simpleHash(content);
+            
+            const output = document.getElementById('signatureOutput');
+            output.style.display = 'block';
+            
+            const sig = document.getElementById('generatedSignature');
+            sig.textContent = fileHash;
+            
+            document.getElementById('signatureOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showTamperSection() {
+            document.getElementById('tamperSection').style.display = 'block';
+        }
+
+        function verifySignature() {
+            const tamperedContent = document.getElementById('tamperedFile').value;
+            const newHash = simpleHash(tamperedContent);
+            
+            const output = document.getElementById('verifyOutput');
+            output.style.display = 'block';
+            
+            if (newHash === fileHash) {
+                output.className = 'output success';
+                output.innerHTML = `
+                    <span class="status secure">✅ SIGNATURE VALID</span>
+                    <p style="margin-top: 15px;">File signature matches - no tampering detected!</p>
+                    <p>File is authentic and unmodified.</p>
+                `;
+            } else {
+                output.className = 'output error';
+                output.innerHTML = `
+                    <span class="status vulnerable">❌ SIGNATURE INVALID - FILE TAMPERED!</span>
+                    <p style="margin-top: 15px;">
+                        <strong>Original Signature:</strong> ${fileHash}
+                    </p>
+                    <p>
+                        <strong>Current Signature:</strong> ${newHash}
+                    </p>
+                    <p style="margin-top: 10px; color: #ff3333;">
+                        File has been modified! Signature verification failed.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        This is how digital signatures detect tampering:
+                    </p>
+                    <ul style="color: #a0a0a0; margin-left: 20px; margin-top: 10px;">
+                        <li>Any byte change in the file changes the hash</li>
+                        <li>New hash doesn't match the signature</li>
+                        <li>Tampering is immediately detected</li>
+                        <li>File is rejected as untrusted</li>
+                    </ul>
+                `;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('A08:2025 Lab Loaded Successfully');
+        });
+    </script>
+</body>
+</html>
