@@ -1,0 +1,538 @@
+  <div class="lab-wrapper">
+    <style>
+      :root {
+        --color-bg-1: #070709;
+        --color-bg-2: #1f1f23;
+        --color-bg-3: #3a3a3f;
+        --color-background-secondary: rgba(255,255,255,0.02);
+        --color-background-tertiary: rgba(255,255,255,0.03);
+        --color-border-tertiary: rgba(255,255,255,0.06);
+        --color-border-secondary: rgba(255,255,255,0.04);
+        --color-border-info: #3a84ff;
+        --color-text-primary: #e6e6e6;
+        --color-text-secondary: #bfc3c6;
+        --color-text-success: #8bd08b;
+        --color-text-danger: #ff7b7b;
+        --color-text-warning: #f0c36d;
+        --color-background-danger: rgba(226,75,74,0.12);
+        --color-border-success: rgba(99,153,34,0.3);
+        --border-radius-md: 8px;
+        --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+      }
+
+      html, body { height:100%; margin:0; padding:0; background: linear-gradient(180deg,var(--color-bg-1) 0%, var(--color-bg-2) 40%, var(--color-bg-3) 100%); color:var(--color-text-primary); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+      body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(90deg, rgba(255,255,255,0.015) 0%, rgba(255,255,255,0.00) 20%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.00) 60%, rgba(255,255,255,0.015) 100%); mix-blend-mode: overlay; opacity:0.6; }
+      .lab-wrapper { max-width: 1100px; margin: 0 auto; padding: 1.5rem 16px; box-sizing: border-box; }
+
+      .lab-header { font-size: clamp(18px, 2.2vw, 22px); font-weight: 500; margin-bottom: 1.5rem; color:var(--color-text-primary); }
+      .scenario-tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); flex-wrap: wrap; }
+      .tab-btn { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--color-text-secondary); border-bottom: 2px solid transparent; transition: all 0.2s; }
+      .tab-btn.active { color: var(--color-text-primary); border-bottom-color: var(--color-border-info); }
+      .scenario { display: none; }
+      .scenario.active { display: block; }
+      .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+      @media (max-width: 800px) { .two-column { grid-template-columns: 1fr; } }
+      .column-header { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); margin-bottom: 1rem; padding-bottom: 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+      .input-group { margin-bottom: 1rem; }
+      .input-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-primary); }
+      .input-group input { width: 100%; padding: 8px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 14px; }
+      .input-group input:focus { outline: none; border-color: var(--color-border-info); box-shadow: 0 0 0 2px rgba(55,138,221,0.1); }
+      .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+      button { padding: 8px 14px; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+      button:hover { background: var(--color-background-tertiary); border-color: var(--color-border-secondary); }
+      button.btn-attack { border-color: var(--color-border-danger); color: var(--color-text-danger); }
+      button.btn-attack:hover { background: rgba(226, 75, 74, 0.08); }
+      button.btn-secure { border-color: var(--color-border-success); color: var(--color-text-success); }
+      button.btn-secure:hover { background: rgba(99, 153, 34, 0.08); }
+      .output-box { padding: 12px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); font-family: var(--font-mono); font-size: 12px; min-height: 60px; background: var(--color-background-secondary); margin-bottom: 1rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+      .output-box.success { border-color: var(--color-border-success); background: rgba(99,153,34,0.05); color: var(--color-text-success); }
+      .output-box.danger { border-color: var(--color-border-danger); background: rgba(226,75,74,0.05); color: var(--color-text-danger); }
+      .output-box.warning { border-color: var(--color-border-warning); background: rgba(186,117,23,0.05); color: var(--color-text-warning); }
+      .progress-bar { width: 100%; height: 24px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 1rem; display: flex; align-items: center; }
+      .progress-fill { height: 100%; background: linear-gradient(90deg, #E24B4A, #BA7517); width: 0%; transition: width 0.1s; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: white; }
+      .progress-fill.safe { background: linear-gradient(90deg, #3B6D11, #639922); }
+      .metric { display: inline-block; padding: 8px 12px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); font-size: 12px; margin-right: 8px; margin-bottom: 8px; }
+      .metric-label { color: var(--color-text-secondary); font-size: 11px; }
+      .metric-value { color: var(--color-text-primary); font-weight: 500; font-size: 14px; }
+      .log { max-height: 200px; overflow-y: auto; padding: 12px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); font-family: var(--font-mono); font-size: 11px; margin-bottom: 1rem; line-height: 1.4; }
+      .log-entry { padding: 4px 0; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); }
+      .log-entry.success { color: var(--color-text-success); }
+      .log-entry.danger { color: var(--color-text-danger); }
+      .log-entry.warning { color: var(--color-text-warning); }
+      .explanation { padding: 12px; background: var(--color-background-secondary); border-left: 2px solid var(--color-border-info); border-radius: var(--border-radius-md); font-size: 13px; line-height: 1.6; margin-top: 1rem; }
+      .badge { display: inline-block; padding: 4px 10px; background: var(--color-background-danger); color: var(--color-text-danger); border-radius: var(--border-radius-md); font-size: 11px; font-weight: 500; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+      /* Animations & transitions */
+      @keyframes sheen { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+      @keyframes pulse { 0% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.04); opacity: 0.95 } 100% { transform: scale(1); opacity: 1 } }
+
+      body::before { animation: sheen 8s linear infinite; background-size: 400% 100%; }
+
+      .tab-btn { transition: color 220ms ease, border-bottom-color 220ms ease, transform 160ms ease; }
+      .tab-btn.active { transform: translateY(-2px); }
+
+      .scenario { display: none; opacity: 0; transform: translateY(8px); transition: opacity 260ms ease, transform 260ms ease; }
+      .scenario.active { display: block; opacity: 1; transform: translateY(0); }
+
+      .log-entry { padding: 4px 0; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); opacity: 0; transform: translateX(-6px); transition: opacity 260ms ease, transform 260ms ease; }
+      .log-entry.visible { opacity: 1; transform: translateX(0); }
+
+      .output-box { transition: background-color 220ms ease, border-color 220ms ease, color 180ms ease, transform 160ms ease; }
+      .output-box:empty { opacity: 0.85; }
+
+      .progress-fill { transition: width 420ms cubic-bezier(.2,.9,.2,1), background-position 6s linear; background-size: 300% 100%; }
+
+      .badge { animation: pulse 3.6s ease-in-out infinite; }
+
+      button { will-change: transform, background; }
+
+    </style>
+
+    <div class="lab-header"><i class="ti ti-alert-circle" aria-hidden></i> A07:2025 Authentication Failures - Interactive Lab</div>
+
+    <div class="scenario-tabs">
+      <button class="tab-btn active" onclick="switchScenario(0)">Brute Force</button>
+      <button class="tab-btn" onclick="switchScenario(1)">Password Hashing</button>
+      <button class="tab-btn" onclick="switchScenario(2)">Session Fixation</button>
+      <button class="tab-btn" onclick="switchScenario(3)">Timing Attack</button>
+      <button class="tab-btn" onclick="switchScenario(4)">Password Reset</button>
+    </div>
+
+    <!-- SCENARIO 1: BRUTE FORCE -->
+    <div class="scenario active">
+      <div class="badge">CRITICAL</div>
+      <div class="two-column">
+        <div>
+          <div class="column-header">Vulnerable: No Rate Limiting</div>
+          <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="bf-user" value="admin" readonly>
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="text" id="bf-pwd">
+          </div>
+          <div class="btn-group">
+            <button class="btn-attack" onclick="bfTry()">Try Login</button>
+            <button class="btn-attack" onclick="bfAttack()">Attack (100x)</button>
+          </div>
+          <div class="output-box" id="bf-vuln-out">Ready for attack...</div>
+          <div class="log" id="bf-vuln-log"></div>
+          <div>
+            <div class="metric"><span class="metric-label">Attempts:</span><span class="metric-value" id="bf-vuln-attempts">0</span></div>
+            <div class="metric"><span class="metric-label">Time:</span><span class="metric-value" id="bf-vuln-time">0ms</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="column-header">Secure: With Rate Limiting</div>
+          <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="bf-user-sec" value="admin" readonly>
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="text" id="bf-pwd-sec">
+          </div>
+          <div class="btn-group">
+            <button class="btn-secure" onclick="bfSecure()">Try Login</button>
+          </div>
+          <div class="output-box" id="bf-sec-out">Ready...</div>
+          <div class="log" id="bf-sec-log"></div>
+          <div>
+            <div class="metric"><span class="metric-label">Attempts:</span><span class="metric-value" id="bf-sec-attempts">0/5</span></div>
+            <div class="metric"><span class="metric-label">Locked:</span><span class="metric-value" id="bf-sec-locked">No</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="explanation"><strong>What happens:</strong> Without rate limiting, attackers try passwords at unlimited speed. Secure systems block after 5 failed attempts (60 second cooldown), making brute force infeasible.</div>
+    </div>
+
+    <!-- SCENARIO 2: PASSWORD HASHING -->
+    <div class="scenario">
+      <div class="badge">CRITICAL</div>
+      <div class="two-column">
+        <div>
+          <div class="column-header">Vulnerable: MD5</div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="text" id="hash-pwd-vuln" value="password123">
+          </div>
+          <button class="btn-attack" onclick="hashMD5()">Hash with MD5</button>
+          <div class="output-box" id="hash-vuln-out">Ready...</div>
+          <button class="btn-attack" style="width: 100%;" onclick="crackMD5()">Crack Hash (Instant!)</button>
+          <div class="output-box" id="crack-vuln-out" style="margin-top: 0.5rem;">Ready...</div>
+          <div class="metric" style="margin-top: 0.5rem;"><span class="metric-label">Time to Crack:</span><span class="metric-value" id="hash-vuln-time">-</span></div>
+        </div>
+
+        <div>
+          <div class="column-header">Secure: Bcrypt</div>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="text" id="hash-pwd-sec" value="password123">
+          </div>
+          <button class="btn-secure" onclick="hashBcrypt()">Hash with Bcrypt</button>
+          <div class="output-box" id="hash-sec-out">Ready...</div>
+          <button class="btn-secure" style="width: 100%;" onclick="crackBcrypt()">Try Cracking...</button>
+          <div class="output-box" id="crack-sec-out" style="margin-top: 0.5rem;">Ready...</div>
+          <div class="metric" style="margin-top: 0.5rem;"><span class="metric-label">Time to Crack:</span><span class="metric-value" id="hash-sec-time">-</span></div>
+        </div>
+      </div>
+      <div class="explanation"><strong>What happens:</strong> MD5 hashes match rainbow table entries instantly. Bcrypt uses salt + iterations, making rainbow tables useless. Same password produces different hash every time.</div>
+    </div>
+
+    <!-- SCENARIO 3: SESSION FIXATION -->
+    <div class="scenario">
+      <div class="badge">HIGH</div>
+      <div class="two-column">
+        <div>
+          <div class="column-header">Vulnerable: Accept User Session ID</div>
+          <div class="input-group">
+            <label>Attacker Sets Session</label>
+            <input type="text" id="sf-attacker" value="ATTACKER_SESSION_123" readonly>
+          </div>
+          <button class="btn-attack" onclick="sfSetSession()">1. Set Session</button>
+          <div class="output-box" id="sf-vuln-step1">Ready...</div>
+          <button class="btn-attack" onclick="sfVictimLogin()">2. Victim Logs In</button>
+          <div class="output-box" id="sf-vuln-step2" style="margin-top: 0.5rem;">Ready...</div>
+          <button class="btn-attack" onclick="sfAttackerUses()">3. Attacker Uses Session</button>
+          <div class="output-box" id="sf-vuln-step3" style="margin-top: 0.5rem;">Ready...</div>
+        </div>
+
+        <div>
+          <div class="column-header">Secure: Regenerate Session ID</div>
+          <div class="input-group">
+            <label>Attacker Tries to Set Session</label>
+            <input type="text" id="sf-attacker-sec" value="ATTACKER_SESSION_123" readonly>
+          </div>
+          <button class="btn-secure" onclick="sfSecureSetSession()">1. Attacker Tries</button>
+          <div class="output-box" id="sf-sec-step1">Ready...</div>
+          <button class="btn-secure" onclick="sfSecureVictimLogin()">2. Victim Logs In</button>
+          <div class="output-box" id="sf-sec-step2" style="margin-top: 0.5rem;">Ready...</div>
+          <button class="btn-secure" onclick="sfSecureAttackerFails()">3. Attacker Tries Old Session</button>
+          <div class="output-box" id="sf-sec-step3" style="margin-top: 0.5rem;">Ready...</div>
+        </div>
+      </div>
+      <div class="explanation"><strong>What happens:</strong> Server should regenerate session ID after login. Old attacker-controlled session becomes invalid, preventing hijacking.</div>
+    </div>
+
+    <!-- SCENARIO 4: TIMING ATTACK -->
+    <div class="scenario">
+      <div class="badge">MEDIUM</div>
+      <div class="two-column">
+        <div>
+          <div class="column-header">Vulnerable: String Equality (==)</div>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 1rem;">Correct: admin123pass</p>
+          <div class="input-group">
+            <label>Guess Password</label>
+            <input type="text" id="timing-vuln" placeholder="Try: admin123pass">
+          </div>
+          <button class="btn-attack" style="width: 100%;" onclick="timingVuln()">Check</button>
+          <div class="output-box" id="timing-vuln-out" style="margin-top: 0.5rem;">Ready...</div>
+          <div class="progress-bar"><div class="progress-fill" id="timing-vuln-bar" style="width: 0%"></div></div>
+        </div>
+
+        <div>
+          <div class="column-header">Secure: Constant-Time Compare</div>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 1rem;">Correct: admin123pass</p>
+          <div class="input-group">
+            <label>Guess Password</label>
+            <input type="text" id="timing-sec" placeholder="Try: admin123pass">
+          </div>
+          <button class="btn-secure" style="width: 100%;" onclick="timingSec()">Check</button>
+          <div class="output-box" id="timing-sec-out" style="margin-top: 0.5rem;">Ready...</div>
+          <div class="progress-bar"><div class="progress-fill safe" id="timing-sec-bar" style="width: 100%"></div></div>
+        </div>
+      </div>
+      <div class="explanation"><strong>What happens:</strong> Vulnerable code compares characters until first mismatch - faster responses leak password position. Secure code checks all characters - response time always identical.</div>
+    </div>
+
+    <!-- SCENARIO 5: PASSWORD RESET -->
+    <div class="scenario">
+      <div class="badge">CRITICAL</div>
+      <div class="two-column">
+        <div>
+          <div class="column-header">Vulnerable: Weak Token (4 digits)</div>
+          <button class="btn-attack" style="width: 100%; margin-bottom: 0.5rem;" onclick="resetReqVuln()">Request Reset</button>
+          <div class="output-box" id="reset-vuln-token">Ready...</div>
+          <button class="btn-attack" style="width: 100%; margin-top: 0.5rem;" onclick="resetBruteVuln()">Brute Force Token</button>
+          <div class="progress-bar"><div class="progress-fill" id="reset-vuln-bar" style="width: 0%"></div></div>
+          <div class="output-box" id="reset-vuln-out">Ready...</div>
+          <div>
+            <div class="metric"><span class="metric-label">Attempts:</span><span class="metric-value" id="reset-vuln-att">0/10000</span></div>
+            <div class="metric"><span class="metric-label">Time:</span><span class="metric-value" id="reset-vuln-tm">0s</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="column-header">Secure: 256-bit Token + Expiry</div>
+          <button class="btn-secure" style="width: 100%; margin-bottom: 0.5rem;" onclick="resetReqSec()">Request Reset</button>
+          <div class="output-box" id="reset-sec-token">Ready...</div>
+          <button class="btn-secure" style="width: 100%; margin-top: 0.5rem;" onclick="resetBruteSec()">Try Brute Force...</button>
+          <div class="progress-bar"><div class="progress-fill safe" id="reset-sec-bar" style="width: 0%"></div></div>
+          <div class="output-box" id="reset-sec-out">Ready...</div>
+          <div>
+            <div class="metric"><span class="metric-label">Expiry:</span><span class="metric-value">15 min</span></div>
+            <div class="metric"><span class="metric-label">Rate Limit:</span><span class="metric-value">5/10min</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="explanation"><strong>What happens:</strong> Weak tokens (4-digit) can be brute forced in seconds. Secure tokens are cryptographically random, expire quickly, and have rate limiting.</div>
+    </div>
+  </div>
+
+  <script>
+  let bfVulnAttempts = 0, bfSecureAttempts = 0;
+  let resetVulnToken = '', resetSecureToken = '';
+
+  function switchScenario(n) {
+    document.querySelectorAll('.scenario').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.scenario')[n].classList.add('active');
+    document.querySelectorAll('.tab-btn')[n].classList.add('active');
+  }
+
+  function addLog(elem, msg, type='warning') {
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    elem.appendChild(entry);
+    // reveal with animation
+    requestAnimationFrame(() => setTimeout(() => entry.classList.add('visible'), 12));
+    elem.scrollTop = elem.scrollHeight;
+  }
+
+  // BRUTE FORCE
+  function bfTry() {
+    const pwd = document.getElementById('bf-pwd').value;
+    const correct = 'password123';
+    bfVulnAttempts++;
+    const out = document.getElementById('bf-vuln-out');
+    const log = document.getElementById('bf-vuln-log');
+    
+    if (pwd === correct) {
+      out.className = 'output-box danger';
+      out.textContent = '[BREACHED] Correct password! Account compromised!';
+      addLog(log, 'Password found: ' + pwd, 'danger');
+    } else {
+      out.className = 'output-box warning';
+      out.textContent = '[FAILED] Wrong password. Try again.';
+      addLog(log, 'Attempt: "' + pwd + '" - Failed', 'warning');
+    }
+    document.getElementById('bf-vuln-attempts').textContent = bfVulnAttempts;
+  }
+
+  function bfAttack() {
+    const out = document.getElementById('bf-vuln-out');
+    const log = document.getElementById('bf-vuln-log');
+    const bar = document.getElementById('bf-vuln-progress');
+    const passwords = ['admin', 'password', 'password123', '123456', 'qwerty', 'admin123'];
+    
+    out.textContent = 'Attacking...';
+    addLog(log, 'Starting brute force with common passwords...', 'danger');
+    
+    let found = false;
+    passwords.forEach((pwd, i) => {
+      bfVulnAttempts++;
+      if (pwd === 'password123' && !found) {
+        found = true;
+        out.className = 'output-box danger';
+        out.textContent = '[BREACHED] Found: password123\nAttempts: ' + (i+1) + '\nStatus: ACCOUNT COMPROMISED';
+        addLog(log, 'PASSWORD FOUND after ' + (i+1) + ' attempts!', 'danger');
+      }
+    });
+    
+    document.getElementById('bf-vuln-attempts').textContent = bfVulnAttempts;
+    document.getElementById('bf-vuln-time').textContent = Math.round(passwords.length * 10) + 'ms';
+  }
+
+  function bfSecure() {
+    const pwd = document.getElementById('bf-pwd-sec').value;
+    const correct = 'SecurePass123!';
+    const out = document.getElementById('bf-sec-out');
+    const log = document.getElementById('bf-sec-log');
+    
+    let attempts = parseInt(document.getElementById('bf-sec-attempts').textContent.split('/')[0]);
+    
+    if (attempts >= 5) {
+      out.className = 'output-box danger';
+      out.textContent = '[BLOCKED] Account locked. Too many failed attempts.';
+      addLog(log, 'Login blocked - rate limit active', 'danger');
+      return;
+    }
+    
+    if (pwd === correct) {
+      out.className = 'output-box success';
+      out.textContent = '[SUCCESS] Login accepted!';
+      addLog(log, 'Login successful', 'success');
+    } else {
+      attempts++;
+      out.className = 'output-box warning';
+      out.textContent = '[FAILED] Wrong password. Attempts: ' + attempts + '/5';
+      addLog(log, 'Attempt ' + attempts + '/5 failed', 'warning');
+      
+      if (attempts >= 5) {
+        out.className = 'output-box danger';
+        out.textContent = '[LOCKED] Account locked for 60 seconds!';
+        addLog(log, 'Account locked - rate limit triggered', 'danger');
+        document.getElementById('bf-sec-locked').textContent = 'Yes (60s)';
+      }
+    }
+    document.getElementById('bf-sec-attempts').textContent = attempts + '/5';
+  }
+
+  // HASHING
+  function hashMD5() {
+    const pwd = document.getElementById('hash-pwd-vuln').value;
+    const hash = 'c4ca4238a0b923820dcc509a6f75849b'; // simulated
+    document.getElementById('hash-vuln-out').textContent = 'MD5("' + pwd + '")\n= ' + hash;
+  }
+
+  function crackMD5() {
+    const out = document.getElementById('crack-vuln-out');
+    out.className = 'output-box success';
+    out.textContent = '[CRACKED]\nRainbow table lookup: password123\nTime: 0.5ms\nStatus: COMPROMISED';
+    document.getElementById('hash-vuln-time').textContent = '0.5ms';
+  }
+
+  function hashBcrypt() {
+    const pwd = document.getElementById('hash-pwd-sec').value;
+    const hash = '$2b$10$' + Math.random().toString(36).substring(7) + '...';
+    document.getElementById('hash-sec-out').textContent = 'bcrypt("' + pwd + '", rounds=12)\n= ' + hash + '\n\n(Salt + iterations prevent rainbow tables)';
+  }
+
+  function crackBcrypt() {
+    const out = document.getElementById('crack-sec-out');
+    out.className = 'output-box danger';
+    out.textContent = '[IMPOSSIBLE]\nBcrypt requires 2^128 operations\nTime: 10,000+ years\nStatus: UNCRACKABLE';
+    document.getElementById('hash-sec-time').textContent = '10,000+ years';
+  }
+
+  // SESSION FIXATION
+  function sfSetSession() {
+    const out = document.getElementById('sf-vuln-step1');
+    const log = document.getElementById('sf-vuln-log');
+    out.className = 'output-box warning';
+    out.textContent = 'Session: ATTACKER_SESSION_123\nStatus: Set. Waiting for victim...';
+    addLog(log, 'Attacker set session ID', 'warning');
+  }
+
+  function sfVictimLogin() {
+    const out = document.getElementById('sf-vuln-step2');
+    const log = document.getElementById('sf-vuln-log');
+    out.className = 'output-box warning';
+    out.textContent = 'Victim logged in\nSession: ATTACKER_SESSION_123\nStatus: Now authenticated as victim';
+    addLog(log, 'Victim logged in with attacker session', 'warning');
+  }
+
+  function sfAttackerUses() {
+    const out = document.getElementById('sf-vuln-step3');
+    const log = document.getElementById('sf-vuln-log');
+    out.className = 'output-box danger';
+    out.textContent = 'Attacker uses ATTACKER_SESSION_123\nStatus: FULL ACCESS TO VICTIM ACCOUNT!';
+    addLog(log, 'Session hijacked - account compromised!', 'danger');
+  }
+
+  function sfSecureSetSession() {
+    const out = document.getElementById('sf-sec-step1');
+    const log = document.getElementById('sf-vuln-log');
+    out.className = 'output-box success';
+    out.textContent = 'Attacker tries: ATTACKER_SESSION_123\nResult: REJECTED by server\n(Server generates its own secure session)';
+    addLog(log, 'Attacker session rejected', 'success');
+  }
+
+  function sfSecureVictimLogin() {
+    const out = document.getElementById('sf-sec-step2');
+    const newSession = 'SECURE_' + Math.random().toString(36).substring(7);
+    out.className = 'output-box success';
+    out.textContent = 'Victim logged in\nOld session: ATTACKER_SESSION_123 [INVALIDATED]\nNew session: ' + newSession + ' [ACTIVE]';
+    addLog(document.getElementById('sf-vuln-log'), 'New secure session generated', 'success');
+  }
+
+  function sfSecureAttackerFails() {
+    const out = document.getElementById('sf-sec-step3');
+    out.className = 'output-box success';
+    out.textContent = 'Attacker uses old session\nResult: SESSION NOT FOUND\nStatus: Cannot access victim account';
+    addLog(document.getElementById('sf-vuln-log'), 'Old session rejected - attack failed', 'success');
+  }
+
+  // TIMING ATTACK
+  function timingVuln() {
+    const pwd = document.getElementById('timing-vuln').value;
+    const correct = 'admin123pass';
+    let matches = 0;
+    for (let i = 0; i < Math.min(pwd.length, correct.length); i++) {
+      if (pwd[i] === correct[i]) matches++;
+      else break;
+    }
+    const out = document.getElementById('timing-vuln-out');
+    const bar = document.getElementById('timing-vuln-bar');
+    const pct = (matches / correct.length) * 100;
+    bar.style.width = pct + '%';
+    
+    if (pwd === correct) {
+      out.className = 'output-box success';
+      out.textContent = '[SUCCESS] Correct!';
+    } else {
+      out.className = 'output-box warning';
+      out.textContent = '[FAILED] Wrong password\nMatching chars: ' + matches + '/' + correct.length + '\n(Response time: ' + (10 + matches*5) + 'ms - leaks password!)';
+    }
+  }
+
+  function timingSec() {
+    const pwd = document.getElementById('timing-sec').value;
+    const correct = 'admin123pass';
+    const out = document.getElementById('timing-sec-out');
+    
+    if (pwd === correct) {
+      out.className = 'output-box success';
+      out.textContent = '[SUCCESS] Correct!';
+    } else {
+      out.className = 'output-box warning';
+      out.textContent = '[FAILED] Wrong password\n(Response time: ~5.5ms always - no information leaked!)';
+    }
+  }
+
+  // PASSWORD RESET
+  function resetReqVuln() {
+    resetVulnToken = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    const out = document.getElementById('reset-vuln-token');
+    out.textContent = 'Token: ' + resetVulnToken + '\n(4 digits, no expiry, reusable)';
+  }
+
+  function resetBruteVuln() {
+    if (!resetVulnToken) { alert('Request reset first'); return; }
+    const bar = document.getElementById('reset-vuln-bar');
+    const out = document.getElementById('reset-vuln-out');
+    const token = parseInt(resetVulnToken);
+    
+    out.className = 'output-box danger';
+    out.textContent = '[SUCCESS]\nToken found: ' + resetVulnToken + '\nAttempts: ' + (token + 1) + '/10000\nTime: ~' + ((token + 1) * 0.01).toFixed(2) + 's\nStatus: PASSWORD RESET POSSIBLE';
+    
+    bar.style.width = '100%';
+    document.getElementById('reset-vuln-att').textContent = (token + 1) + '/10000';
+    document.getElementById('reset-vuln-tm').textContent = ((token + 1) * 0.01).toFixed(2) + 's';
+  }
+
+  function resetReqSec() {
+    resetSecureToken = 'secure_' + Math.random().toString(36).substring(2, 18);
+    const out = document.getElementById('reset-sec-token');
+    out.textContent = 'Token: ' + resetSecureToken.substring(0, 30) + '...\n(256-bit random, expires in 15 min, single-use)';
+  }
+
+  function resetBruteSec() {
+    const out = document.getElementById('reset-sec-out');
+    out.className = 'output-box danger';
+    out.textContent = '[IMPOSSIBLE]\nToken space: 2^256 possibilities\nBrute force time: ~2^128 years\nRate limit blocks after 5 attempts\nStatus: UNCRACKABLE';
+  }
+  </script>
+  <script>
+    (function(){
+      if (!document.querySelector('meta[name="viewport"]')) {
+        const m = document.createElement('meta');
+        m.name = 'viewport';
+        m.content = 'width=device-width, initial-scale=1';
+        if (document.head) document.head.appendChild(m); else document.documentElement.appendChild(m);
+      }
+    })();
+  </script>
